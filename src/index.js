@@ -10,7 +10,7 @@ var colorTags = [];
 const colorKeysDefault = ["b", "B", "f", "F", "g", "G", "o", "O",
                           "s", "S", "r", "R", "t", "y", "w"];
 var colorKeys = [];
-var cursorAfter;o
+var cursorAfter;
 
 function keyHighlight(e) {
   if (hFlag) {
@@ -67,10 +67,13 @@ function addColor(color) {
 function setCursorPosition(input,start=0,end=0,length=0) {
   setTimeout(() => {
         input = document.activeElement;
-        if (cursorAfter) input.selectionStart = input.selectionEnd = end+length+2;
+        if (start==end) input.selectionStart = start+length;
         else {
-            input.selectionStart = start+length;
-            input.selectionEnd = end+length;
+          if (cursorAfter) input.selectionStart = input.selectionEnd = end+length+2;
+          else {
+              input.selectionStart = start+length;
+              input.selectionEnd = end+length;
+          }
         }
       },50);
   return;
