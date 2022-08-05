@@ -35,9 +35,10 @@ Settings allow you to use your own set of color tags and corresponding trigger l
 Don't overuse colors ! Don't forget that the extension inserts tags in your content, which reduces its portability (see below the commands to quickly remove tags).
 
 ## Bonus commands
-There is two commands in the Command Palette (Ctrl-Cmd + p) to 
-- remove all color tags of the current block (`Atl + h` do the same)
-- same as previous and remove, in addition, all format markups (^^, \*\*, \_\_)
+There is three commands in the Command Palette (Ctrl-Cmd + p) to export more easily you data, since colors tags are readable only in Roam with the current extension:
+- remove color tags from current block (`Atl + h` do the same)
+- Remove color tags & bold/hightlighs/italics markups from current block (^^, \*\*, \_\_)
+- Remove all color tags from current page (the whole page is processed, even if you are zooming on a part only)
 
 ## Future developments
 - This extension is currently keyboard only, I could add some visual UI.
