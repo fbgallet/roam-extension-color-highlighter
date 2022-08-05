@@ -1,4 +1,4 @@
-var hFlag, tFlag;
+var hFlag, tFlag, needConfirmKey;
 const colorTagsDefault = ["#c:blue", "#c:BLUE", 
                         "#c:fuchsia", "#c:FUCHSIA",
                         "#c:green", "#c:GREEN",
@@ -14,32 +14,51 @@ var cursorAfter;
 
 function keyHighlight(e) {
   if (hFlag) {
-    if (e.key != "Shift") hFlag = false;
-    let color = checkColorKeys(e.key);
-    if (color!='') {
-      addColor(color);
-      e.preventDefault();
+    if (!e.shiftKey && !e.ctrlKey) hFlag = false;
+    if (!needConfirmKey) {
+      let color = checkColorKeys(e.key);
+      if (color!='') {
+        addColor(color);
+        e.preventDefault();
+      }
     }
+    if (e.ctrlKey) needConfirmKey=false;
   }
   if (tFlag) {
-    if (e.key != "Shift") tFlag = false;
-    let color = checkColorKeys(e.key);
-    if (color!='') {
-      addColor(color);
-      e.preventDefault();
+    if (!e.shiftKey && !e.ctrlKey) tFlag = false;
+    if (!needConfirmKey) {
+      let color = checkColorKeys(e.key);
+      if (color!='') {
+        addColor(color);
+        e.preventDefault();
+      }
+    }
+    if (e.ctrlKey) needConfirmKey=false;
+  }
+  if (tFlag !=true && hFlag!=true) {
+    if (e.ctrlKey && e.key == "h") {
+      hFlag = true;
+      if (hasSelection()) needConfirmKey=false;
+      else needConfirmKey=true;
+      return;
+    }
+    if (e.ctrlKey && e.key == "b") {
+      tFlag = true;
+      if (hasSelection()) needConfirmKey=false;
+      else needConfirmKey=true;
+    }
+    if ((e.altKey && e.key == "h")) {
+      //hFlag = true;
+      removeHighlightsFromBlock();
+      setCursorPosition(document.activeElement)
     }
   }
-  if (e.ctrlKey && e.key == "h") {
-    hFlag = true;
-  }
-  if ((e.altKey && e.key == "h")) {
-    //hFlag = true;
-    removeHighlightsFromBlock();
-    setCursorPosition(document.activeElement)
-  }
-  if (e.ctrlKey && e.key == "b") {
-    tFlag = true;
-  }
+}
+
+function hasSelection() {
+  let input = document.activeElement;
+  if (input.selectionStart!=input.selectionEnd) return true;
+  else return false;
 }
 
 function checkColorKeys(key) {
@@ -48,6 +67,12 @@ function checkColorKeys(key) {
     }
     return '';
 }
+/*
+function countDown(c) {
+  setTimeout(( ) ⇒ {
+
+  })
+}*/
 
 function addColor(color) {
     let tagLength=color.length;
@@ -67,7 +92,7 @@ function addColor(color) {
 function setCursorPosition(input,start=0,end=0,length=0) {
   setTimeout(() => {
         input = document.activeElement;
-        if (start==end) input.selectionStart = start+length;
+        if (start==end) input.selectionStart = input.selectionEnd = start+length;
         else {
           if (cursorAfter) input.selectionStart = input.selectionEnd = end+length+2;
           else {
@@ -79,20 +104,56 @@ function setCursorPosition(input,start=0,end=0,length=0) {
   return;
 }
 
-function removeHighlightsFromBlock(removeH=false,removeB=false,removeI=false) {
-  let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+function removeHighlightsFromBlock(uid, removeH=false,removeB=false,removeI=false) {
+  //let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
   let content = getBlockContent(uid);  
+  content = removeFromContent(content, removeH, removeB, removeI);
+  setTimeout(function() {
+    window.roamAlphaAPI
+              .updateBlock({'block': 
+                  {'uid': uid,
+                  'string': content}});
+  },10)
+  
+}
+
+function removeFromContent(content, removeH=false,removeB=false,removeI=false) {
   if (removeH) content = content.replaceAll("^^","");
   if (removeB) content = content.replaceAll("**","");
   if (removeI) content = content.replaceAll("__","");
   for(let i=0;i<colorTags.length;i++) {
     content = content.replaceAll(colorTags[i],"");  
   }
-  window.roamAlphaAPI
-              .updateBlock({'block': 
-                  {'uid': uid,
-                  'string': content}});
+  return content;
 }
+
+/*function recursiveCleaning(branch) {
+  for (let i=0;i<branch.length;i++) {
+    let nodeUid = branch[i].uid; 
+    let nodeContent = branch[i].string;
+    let newContent = removeFromContent(nodeContent);
+    if (nodeContent.length != newContent.length) {
+      console.log(nodeContent);
+
+      //setTimeout(function() {
+        await window.roamAlphaAPI
+                  .updateBlock({'block': 
+                      {'uid': nodeUid,
+                      'string': nodeContent}})
+      //}, 50);
+    }
+    if (branch[i].children) recursiveCleaning(branch[i].children);
+  }
+}
+
+function getPageTreeByBlockUid(bUid) {
+  return window.roamAlphaAPI.q(`
+    [:find (pull ?page 
+      [ :block/string :block/uid :block/children
+        {:block/page ...}
+        {:block/children ...}])
+          :where [?page :block/uid "${bUid}"]]`)[0][0].page.children;
+}*/
 
 function getBlockContent(uid) {
     return window.roamAlphaAPI
@@ -139,15 +200,26 @@ export default {
         window.roamAlphaAPI.ui.commandPalette.addCommand({
             label: "Remove color tags from current block (Color Highlighter extension)",
             callback: () => {
-                removeHighlightsFromBlock();
+                let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+                removeHighlightsFromBlock(uid);
             }
         })
         window.roamAlphaAPI.ui.commandPalette.addCommand({
             label: "Remove color tags & bold/hightlighs/italics markups from current block",
             callback: () => {
-                removeHighlightsFromBlock(true,true,true);
+                let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+                removeHighlightsFromBlock(uid, true,true,true);
             }
         })
+     /*   window.roamAlphaAPI.ui.commandPalette.addCommand({
+          label: "Remove all color tags from current page (Color Highlighter extension)",
+          callback: async () => {        
+            let uid = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();             
+            console.log(uid);
+            const pageTree = getPageTreeByBlockUid(uid);
+            await recursiveCleaning(pageTree);
+          }
+      }) */
         if (extensionAPI.settings.get("color-tags") == null)
             colorTags = colorTagsDefault;
         else colorTags = extensionAPI.settings.get("color-tags").replace(' ','').split(",");
