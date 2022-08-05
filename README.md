@@ -2,7 +2,7 @@
 
 ### Highlight text with different colors or write text with different colors. Keyboard only.
 
-![Color highlighter](https://user-images.githubusercontent.com/74436347/182986774-2ea89bf0-e125-4da8-9f0d-4ca287968aea.png)
+![image](https://user-images.githubusercontent.com/74436347/182989132-886f244e-a37b-40fa-8010-04bdee184e16.png)
 
 ## Instructions
 Select some part of your text, add Highight with native Roam hotkeys (Ctrl-Cmd + h), then press a letter corresponding to the first letter of the color, e.g. 'g' for Green. If you press Shift + a letter, the color will be more vivid. It will insert a tag like `#c:green` before highlight or bold markup, and the cursor will be positionned just after the colored text (or as selection of the colored text, in option).
