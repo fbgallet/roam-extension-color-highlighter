@@ -127,33 +127,37 @@ function removeFromContent(content, removeH=false,removeB=false,removeI=false) {
   return content;
 }
 
-/*function recursiveCleaning(branch) {
+function recursiveCleaning(branch) {
   for (let i=0;i<branch.length;i++) {
     let nodeUid = branch[i].uid; 
     let nodeContent = branch[i].string;
     let newContent = removeFromContent(nodeContent);
+    console.log(newContent)
+    console.log(nodeUid);
     if (nodeContent.length != newContent.length) {
-      console.log(nodeContent);
+      //console.log(nodeContent);
 
-      //setTimeout(function() {
-        await window.roamAlphaAPI
+      setTimeout(function() {
+        window.roamAlphaAPI
                   .updateBlock({'block': 
                       {'uid': nodeUid,
-                      'string': nodeContent}})
-      //}, 50);
+                      'string': newContent}})
+      }, 50);
     }
     if (branch[i].children) recursiveCleaning(branch[i].children);
   }
 }
 
 function getPageTreeByBlockUid(bUid) {
-  return window.roamAlphaAPI.q(`
+  let tree = window.roamAlphaAPI.q(`
     [:find (pull ?page 
       [ :block/string :block/uid :block/children
         {:block/page ...}
         {:block/children ...}])
-          :where [?page :block/uid "${bUid}"]]`)[0][0].page.children;
-}*/
+          :where [?page :block/uid "${bUid}"]]`)[0][0];
+  if (tree.page) return tree.page.children;
+  else return tree.children;
+}
 
 function getBlockContent(uid) {
     return window.roamAlphaAPI
@@ -205,21 +209,21 @@ export default {
             }
         })
         window.roamAlphaAPI.ui.commandPalette.addCommand({
-            label: "Remove color tags & bold/hightlighs/italics markups from current block",
+            label: "Remove color tags & bold/hightlighs/italics markups from current block (Color Highlighter extension)",
             callback: () => {
                 let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
                 removeHighlightsFromBlock(uid, true,true,true);
             }
         })
-     /*   window.roamAlphaAPI.ui.commandPalette.addCommand({
+        window.roamAlphaAPI.ui.commandPalette.addCommand({
           label: "Remove all color tags from current page (Color Highlighter extension)",
           callback: async () => {        
             let uid = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();             
             console.log(uid);
             const pageTree = getPageTreeByBlockUid(uid);
-            await recursiveCleaning(pageTree);
+            recursiveCleaning(pageTree);
           }
-      }) */
+      }) 
         if (extensionAPI.settings.get("color-tags") == null)
             colorTags = colorTagsDefault;
         else colorTags = extensionAPI.settings.get("color-tags").replace(' ','').split(",");
