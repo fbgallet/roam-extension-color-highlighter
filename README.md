@@ -28,7 +28,9 @@ Current default set of colors (_initial letter ⇒ tag_)
 Settings allow you to use your own set of color tags and corresponding trigger letters. If you enter something in the setting fields, only your tags will be available. If you remove your settings, default tags will be applied.
 
 ## Bonus commands
-Two commands in the Command Palette (Ctrl-Cmd + p) to remove all colors tags of the current block or, in addition, all format markups (^^, \*\*, \_\_)
+There is two commands in the Command Palette (Ctrl-Cmd + p) to 
+- remove all color tags of the current block (`Atl + h` do the same)
+- same as previous and remove, in addition, all format markups (^^, \*\*, \_\_)
 
 ## Future developments
 - This extension is currently keyboard only, I could add some visual UI.
