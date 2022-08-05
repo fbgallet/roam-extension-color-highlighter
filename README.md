@@ -5,8 +5,9 @@
 ![image](https://user-images.githubusercontent.com/74436347/182989132-886f244e-a37b-40fa-8010-04bdee184e16.png)
 
 ## Instructions
-Select some part of your text inside a block, add Highight with native Roam hotkeys (Ctrl-Cmd + h), then press a letter corresponding to the first letter of the color, e.g. 'g' for Green. If you press Shift + a letter, the color will be more vivid. It will insert a tag like `#c:green` before highlight or bold markup.
-After color choice, the cursor will be placed just after the colored text (or as selection of the colored text, in option). If no text is initialy selected (you want to write something new), the cursor will be position inside the markups, so you can immediatly write in color.
+Select some part of your text inside a block, add Highight with native Roam hotkeys (Ctrl-Cmd + h), then press a letter corresponding to the first letter of the color, e.g. 'g' for green. If you press Shift when pressing the color first letter, the color will be more vivid and the text color in the highlight will be white instead of black.
+It will insert a tag like `#c:green` (or #c:GREEN) before highlight or bold markup, the result will be e.g.: `#c:green**my green text**`. Of course, these tags are only visible when you edit the block.
+After a color choice, the cursor will be placed just next the colored text, right next the markdown characters to be exact. In option (panel settings above), you can choose to keep Roam's default behavior: highlighted or bolded text will be selected. If no text is initialy selected (you want to write something new), the cursor will be placed inside the markups, so you can immediatly write in color.
 
 Current default set of colors (_initial letter ⇒ tag_)
 - b ⇒ #c:blue
