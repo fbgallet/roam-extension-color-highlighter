@@ -1,0 +1,159 @@
+/* Credit to @CatoMinor3 for this great CSS trick !*/
+
+[data-tag^="c:"] {
+    display:none !important;  
+}
+[data-tag^="c:"] + .rm-highlight, 
+[data-tag^="c:"] + .rm-page-ref--link {
+    color: #fff;
+	border-radius: 2px;
+	padding-left: 2px;
+	padding-right: 2px;
+}
+
+[data-tag="c:blue"] + .rm-highlight,
+[data-tag="c:blue"] + .rm-page-ref--link {
+  color: black !important;
+background-color: #AEDBFE !important;
+}
+[data-tag="c:BLUE"] + .rm-highlight,
+[data-tag="c:BLUE"] + .rm-page-ref--link {
+	background-color: #0074D9 !important;
+}
+[data-tag="c:blue"] + .rm-bold, 
+[data-tag="c:blue"] + em {
+color: #0074D9;
+font-weight: 600;
+}
+[data-tag="c:BLUE"] + .rm-bold, 
+[data-tag="c:BLUE"] + em {
+color: #0000FF;
+font-weight: 700;
+}
+[data-tag="c:fuchsia"] + .rm-highlight,
+[data-tag="c:fuchsia"] + .rm-page-ref--link {
+color: black !important;
+background-color: #FFA0EA !important;
+}
+[data-tag="c:FUCHSIA"] + .rm-highlight,
+[data-tag="c:FUCHSIA"] + .rm-page-ref--link {
+background-color: #F012BE !important;
+}
+[data-tag="c:fuchsia"] + .rm-bold, 
+[data-tag="c:fuchsia"] + em {
+color: #FFA0EA;
+font-weight: 600;
+}
+[data-tag="c:FUCHSIA"] + .rm-bold, 
+[data-tag="c:FUCHSIA"] + em {
+color: #F012BE;
+font-weight: 700;
+}
+
+[data-tag="c:green"] + .rm-highlight,
+[data-tag="c:green"] + .rm-page-ref--link {
+  color: #000000 !important;
+  background-color: #2ECC404F !important;
+}
+[data-tag="c:GREEN"] + .rm-highlight,
+[data-tag="c:GREEN"] + .rm-page-ref--link {
+background-color: #32CD32 !important;
+}
+[data-tag="c:green"] + .rm-bold,
+[data-tag="c:green"] + em {
+color: #32CD32;
+font-weight: 600;
+}
+[data-tag="c:GREEN"] + .rm-bold,
+[data-tag="c:GREEN"] + em {
+    color: #008000 !important;
+    font-weight: 700;
+}
+
+[data-tag="c:orange"] + .rm-highlight,
+[data-tag="c:orange"] + .rm-page-ref--link {
+color: black !important;
+background-color: #FFAF69 !important;
+}
+[data-tag="c:ORANGE"] + .rm-highlight,
+[data-tag="c:ORANGE"] + .rm-page-ref--link {
+background-color: #FF851B !important;
+}
+[data-tag="c:orange"] + .rm-bold,
+[data-tag="c:orange"] + em {
+color: #FF851B;
+font-weight: 600;
+}
+[data-tag="c:ORANGE"] + .rm-bold,
+[data-tag="c:ORANGE"] + em {
+color: #fe7702;
+font-weight: 700;
+}
+
+[data-tag="c:silver"] + .rm-highlight,
+[data-tag="c:silver"] + .rm-page-ref--link {
+color:black !important;
+background-color: #DDDDDD !important;
+}
+/* GREY */
+[data-tag="c:SILVER"] + .rm-highlight,
+[data-tag="c:SILVER"] + .rm-page-ref--link {
+background-color: #AAAAAA !important;
+}
+[data-tag="c:silver"] + .rm-bold,
+[data-tag="c:silver"] + em {
+color: #DDDDDD;
+font-weight: 600;
+}
+[data-tag="c:SILVER"] + .rm-bold,
+[data-tag="c:SILVER"] + em {
+color: #AAAAAA; 
+font-weight: 700;  
+}
+
+[data-tag="c:red"] + .rm-highlight,
+[data-tag="c:red"] + .rm-page-ref--link {
+color: #000000 !important;
+background-color: #FFAEB6 !important;
+}
+[data-tag="c:RED"] + .rm-highlight,
+[data-tag="c:RED"] + .rm-page-ref--link {
+background-color: #FF0000 !important;
+}
+[data-tag="c:red"] + .rm-bold,
+[data-tag="c:red"] + em {
+  color: #FF0000 !important;
+  font-weight: 600;
+}
+[data-tag="c:RED"] + .rm-bold,
+[data-tag="c:RED"] + em {
+color: #E60D00;
+font-weight: 700;
+}
+
+[data-tag="c:teal"] + .rm-highlight,
+[data-tag="c:teal"] + .rm-page-ref--link {
+background-color: #39CCCC !important;
+}
+[data-tag="c:teal"] + .rm-bold,
+[data-tag="c:teal"] + em {
+color: #39CCCC;    
+font-weight: 600;
+}
+
+[data-tag="c:yellow"] + .rm-highlight,
+[data-tag="c:yellow"] + .rm-page-ref--link {
+color: black !important;
+background-color: #FFDC00 !important;
+}
+[data-tag="c:yellow"] + .rm-bold,
+[data-tag="c:yellow"] + em {
+color: #FFDC00;
+font-weight: 600;
+}
+
+[data-tag="c:black"] + .rm-highlight,
+[data-tag="c:black"] + .rm-page-ref--link {
+background-color: #111111 !important;
+font-weight: 600;
+}
