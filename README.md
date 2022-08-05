@@ -5,11 +5,13 @@
 ![image](https://user-images.githubusercontent.com/74436347/182989132-886f244e-a37b-40fa-8010-04bdee184e16.png)
 
 ## Instructions
-Select some part of your text inside a block, add Highight with native Roam hotkeys (`Ctrl-Cmd + h`), then **press a letter corresponding to the first letter of the color**, e.g. 'g' for green. If you press `Shift` when pressing the color first letter, the color will be more vivid and the text color in the highlight will be white instead of black.
+Select some part of your text inside a block, add Highight with native Roam hotkeys (`Ctrl + h` on Windows, `Cmd + h` on iOS), then **press a letter corresponding to the first letter of the color (without pressing Ctrl-Cmd)**, e.g. 'g' for green. If you press `Shift` when pressing the color first letter, the color will be more vivid and the text color in the highlight will be white instead of black.
 
 The extension will insert a tag like `#c:green` (or #c:GREEN) before highlight or bold markdown syntax, the result will be e.g.: `#c:green**my green text**`. Of course, these tags are only visible when you edit the block. _Credit to @CatoMinor3 for the great CSS trick allowing to customize highlighted and bold texts in Roam!_
 
-After a color choice, the **cursor** will be placed just next the colored text, right next the markdown characters to be exact, so you can write something else after. In option (panel settings above), you can choose to keep Roam's default behavior: highlighted or bolded text will be selected. If no text is initialy selected (you want to write something new), the cursor will be placed inside the markups, so you can immediatly write in color.
+After a color choice, the **cursor** will be placed just next the colored text, right next the markdown characters to be exact, so you can write something else after. In option (panel settings above), you can choose to keep Roam's default behavior: highlighted or bolded text will be selected.
+
+⚠️ If no text is initialy selected (you want to write something new), the cursor will be placed inside the markups, so you can immediatly write. But since the color trigger letters could conflict with the first letter you might write in a native hightlight or bold mode, **you need to enable "color mode" by pressing again "Ctrl/Cmd" in this case**.
 
 Current default set of colors (_initial letter ⇒ tag_)
 - b ⇒ #c:blue
@@ -29,6 +31,8 @@ Current default set of colors (_initial letter ⇒ tag_)
 - w ⇒ #c:black
 
 Settings allow you to use your own set of color tags and corresponding trigger letters. If you enter something in the setting fields, only your tags will be available. If you remove your settings, default tags will be applied.
+
+Don't overuse colors ! Don't forget that the extension inserts tags in your content, which reduces its portability (see below the commands to quickly remove tags).
 
 ## Bonus commands
 There is two commands in the Command Palette (Ctrl-Cmd + p) to 
