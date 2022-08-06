@@ -101,13 +101,13 @@ function addColor(color, flag) {
       if (flag=='h' && lastColorH=='') lastColorH=color;
       if (flag=='t' && lastColorT=='') lastColorT=color;
     }
-    let tagLength=color.length;
+    let tagLength=color.length+1;
     let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
     let content = getBlockContent(uid);
     let input = document.activeElement; 
     let start = input.selectionStart;
     let end = input.selectionEnd;
-    content = content.slice(0, start-2) + color + content.slice(start-2);
+    content = content.slice(0, start-2) + color + ' ' + content.slice(start-2);
     window.roamAlphaAPI
             .updateBlock({'block': 
                 {'uid': uid,
@@ -144,7 +144,7 @@ function removeHighlightsFromBlock(uid=null, removeMarkups=false) {
 
 function removeFromContent(content, removeMarkups=false, onlyForThisMarkup='') {
   for(let i=0;i<colorTags.length;i++) {
-    content = content.replaceAll(colorTags[i]+onlyForThisMarkup,""+onlyForThisMarkup);  
+    content = content.replaceAll(colorTags[i]+' '+onlyForThisMarkup,''+onlyForThisMarkup);  
   }
   if (removeMarkups) {
     content = content.replaceAll("^^","");
@@ -172,7 +172,7 @@ function recursiveCleaning(branch) {
   }
 }
 
-function setColorInBlock(e,markup) {
+function setColorInBlock(e,uid,markup) {
   let color = checkColorKeys(e.key);
   if (e.key == 'Backspace') {
     color = 'remove';
@@ -180,12 +180,11 @@ function setColorInBlock(e,markup) {
   }
   if (color!='') {
     if (color == 'remove') color = '';
-    let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.['block-uid'];
-    let content = getBlockContent(uid);  
+    let content = getBlockContent(uid);
     let newContent = removeFromContent(content, false, markup);
     let splitContent = newContent.split(markup);
     for(let i=0;i<splitContent.length;i+=2){
-      splitContent[i] += color;
+      if (i!=splitContent.length-1) splitContent[i] = splitContent[i] + color + ' ';
     }
     newContent = splitContent.join(markup);
     setTimeout(function() {
@@ -193,17 +192,17 @@ function setColorInBlock(e,markup) {
                 .updateBlock({'block': 
                     {'uid': uid,
                     'string': newContent}});
-    },10)
+    },50)
     e.preventDefault();
   }
 }
 
-function setColorCallback(markup) {
+function setColorCallback(uid, markup) {
   const argListener = {
     capture: true,
     once: true
   };
-  addEventListener("keydown", function(e) { setColorInBlock(e,markup);}, argListener);
+  addEventListener("keydown", function(e) { setColorInBlock(e,uid,markup);}, argListener);
 }
 
 function getPageViewTreeByBlockUid(bUid) {
@@ -289,17 +288,40 @@ export default {
           }
         });
         window.roamAlphaAPI.ui.commandPalette.addCommand({
-          label: "Color Highlighter: Set color of highlights in current block (or reset with Backspace)",
+          label: "Color Highlighter: Set color of highlights in current block (+letter or Backspace)",
           callback: () => {
-            setColorCallback('^^');
+            let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.['block-uid'];
+            setColorCallback(uid,'^^');
           }
         })
         window.roamAlphaAPI.ui.commandPalette.addCommand({
-          label: "Color Highlighter: Set color of bolded texts in current block (or reset with Backspace)",
+          label: "Color Highlighter: Set color of bolded texts in current block (+letter or Backspace)",
           callback: () => {
-            setColorCallback('**');
+            let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.['block-uid'];
+            setColorCallback(uid,'**');
           }
         }) 
+        roamAlphaAPI.ui.blockContextMenu.addCommand(
+          {label: "Color Highlighter: Remove color tags", 
+           'display-conditional': 
+             (e) => e['block-string'].includes("#c:"), 
+           callback: (e)=>removeHighlightsFromBlock(e["block-uid"], removeOption)
+          }
+        );
+        roamAlphaAPI.ui.blockContextMenu.addCommand(
+          {label: "Color Highlighter: Set color of highlights (& press a letter or Backspace)", 
+           'display-conditional': 
+             (e) => e['block-string'].includes("^^"), 
+           callback: (e)=> setColorCallback(e["block-uid"],'^^')
+          }
+        );
+        roamAlphaAPI.ui.blockContextMenu.addCommand(
+          {label: "Color Highlighter: Set color of bold texts (& press a letter or Backspace)", 
+           'display-conditional': 
+             (e) => e['block-string'].includes("**"), 
+           callback: (e)=> setColorCallback(e["block-uid"],'**')
+          }
+        );
     //    if (extensionAPI.settings.get("color-tags") == null)
             colorTags = colorTagsDefault;
     //    else colorTags = extensionAPI.settings.get("color-tags").replace(' ','').split(",");
@@ -347,6 +369,21 @@ export default {
         console.log('Color Highlighter loaded.');
     },
     onunload: () => {
+      window.roamAlphaAPI.ui.commandPalette
+            .removeCommand({label: 'Color Highlighter: Remove color tags from current BLOCK'});
+      window.roamAlphaAPI.ui.commandPalette
+            .removeCommand({label: 'Color Highlighter: Remove color tags from current PAGE zoom view'});
+      window.roamAlphaAPI.ui.commandPalette
+            .removeCommand({label: 'Color Highlighter: Set color of highlights in current block (+letter or Backspace)'});
+      window.roamAlphaAPI.ui.commandPalette
+            .removeCommand({label: 'Color Highlighter: Set color of bolded texts in current block (+letter or Backspace)'});
+      roamAlphaAPI.ui.blockContextMenu.removeCommand(
+        {label: "Color Highlighter: Remove color tags"});
+      roamAlphaAPI.ui.blockContextMenu.removeCommand(
+        {label: "Color Highlighter: Set color of highlights (& press a letter or Backspace)"});
+      roamAlphaAPI.ui.blockContextMenu.removeCommand(
+          {label: "Color Highlighter: Set color of bold texts (& press a letter or Backspace)"});
+            
       window.removeEventListener("keydown", keyHighlight);
       console.log('Color Highlighter unloaded.');
     }

@@ -9,6 +9,13 @@
 	border-radius: 2px;
 	padding-left: 2px;
 	padding-right: 2px;
+  margin-left: -6px;
+}
+
+[data-tag^="c:"] + .rm-bold, 
+[data-tag^="c:"] + em {
+  margin-left: -6px;
+  font-weight: 600;
 }
 
 [data-tag="c:blue"] + .rm-highlight,
@@ -23,7 +30,6 @@ background-color: #AEDBFE !important;
 [data-tag="c:blue"] + .rm-bold, 
 [data-tag="c:blue"] + em {
 color: #0074D9;
-font-weight: 600;
 }
 [data-tag="c:BLUE"] + .rm-bold, 
 [data-tag="c:BLUE"] + em {
@@ -42,7 +48,6 @@ background-color: #F012BE !important;
 [data-tag="c:fuchsia"] + .rm-bold, 
 [data-tag="c:fuchsia"] + em {
 color: #FFA0EA;
-font-weight: 600;
 }
 [data-tag="c:FUCHSIA"] + .rm-bold, 
 [data-tag="c:FUCHSIA"] + em {
@@ -62,12 +67,10 @@ background-color: #32CD32 !important;
 [data-tag="c:green"] + .rm-bold,
 [data-tag="c:green"] + em {
 color: #32CD32;
-font-weight: 600;
 }
 [data-tag="c:GREEN"] + .rm-bold,
 [data-tag="c:GREEN"] + em {
     color: #008000 !important;
-    font-weight: 700;
 }
 
 [data-tag="c:orange"] + .rm-highlight,
@@ -82,7 +85,6 @@ background-color: #FF851B !important;
 [data-tag="c:orange"] + .rm-bold,
 [data-tag="c:orange"] + em {
 color: #FF851B;
-font-weight: 600;
 }
 [data-tag="c:ORANGE"] + .rm-bold,
 [data-tag="c:ORANGE"] + em {
@@ -103,7 +105,6 @@ background-color: #AAAAAA !important;
 [data-tag="c:silver"] + .rm-bold,
 [data-tag="c:silver"] + em {
 color: #DDDDDD;
-font-weight: 600;
 }
 [data-tag="c:SILVER"] + .rm-bold,
 [data-tag="c:SILVER"] + em {
@@ -123,7 +124,6 @@ background-color: #FF0000 !important;
 [data-tag="c:red"] + .rm-bold,
 [data-tag="c:red"] + em {
   color: #FF0000 !important;
-  font-weight: 600;
 }
 [data-tag="c:RED"] + .rm-bold,
 [data-tag="c:RED"] + em {
@@ -138,7 +138,6 @@ background-color: #39CCCC !important;
 [data-tag="c:teal"] + .rm-bold,
 [data-tag="c:teal"] + em {
 color: #39CCCC;    
-font-weight: 600;
 }
 
 [data-tag="c:yellow"] + .rm-highlight,
@@ -149,11 +148,9 @@ background-color: #FFDC00 !important;
 [data-tag="c:yellow"] + .rm-bold,
 [data-tag="c:yellow"] + em {
 color: #FFDC00;
-font-weight: 600;
 }
 
 [data-tag="c:black"] + .rm-highlight,
 [data-tag="c:black"] + .rm-page-ref--link {
 background-color: #111111 !important;
-font-weight: 600;
 }
