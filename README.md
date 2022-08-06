@@ -8,7 +8,7 @@
 
 Select some part of your text inside a block, add Highight or bold with native Roam hotkeys (`Ctrl or Cmd + h` for highlight, `Ctrl or Cmd + b` for bold), then **press a letter corresponding to the first letter of the color (**without pressing Ctrl-Cmd anymore**)**, e.g. 'g' for green. If you press `Shift` when pressing the color first letter, the color will be more vivid and the text color in the highlight will be white instead of black.
 
-The extension will insert a tag like `#c:green` (or #c:GREEN) before highlight or bold markdown syntax, the result will be e.g.: `#c:green**my green text**`. Of course, these tags are only visible when you edit the block. _Credit to @CatoMinor3 for the great CSS trick allowing to customize highlighted and bold texts in Roam!_
+The extension will insert a tag like `#c:green` (or #c:GREEN) before highlight or bold markdown syntax, the result will be e.g.: `#c:green **my green text**`. Of course, these tags are only visible when you edit the block. _Credit to @CatoMinor3 for the great CSS trick allowing to customize highlighted and bold texts in Roam!_
 
 By default, you must choose a color each time, but you enable `Keep last color` option, the last applied color will be automaticaly applied when pressing `Ctrl/Cmd + b/h` next times. When tag color has just been inserted, you can change it by pressing the corresponding color letter or reset to default bold/highlight by pression `Backspace`.
 
@@ -37,14 +37,15 @@ Current default set of colors (_initial letter ⇒ tag_)
 Don't overuse colors ! Don't forget that the extension inserts tags in your content, which reduces its portability (see below the commands to quickly remove tags).
 
 
-## Remove commands
+## Commands (comand palette (Crtl/Cmd + p) and block context menu)
 
-There is two commands in the Command Palette (Ctrl-Cmd + p) for removing colors tags (it can help to export more easily you data, since colors tags are readable only in Roam with the current extension):
+- `Remove color tags from current block` (`Atl + h` do the same) (__Command palette & context menu__)
+- `Remove all color tags from current page view` (__Command palette__) : it remove all color tags in  the current zoom view, not the whole page, but collapsed bullets are included.
+In the setting panel, you can choose if you prefer to remove only tags (default) or tags and format markdown syntax (`^^`, `**`, `__`)
+These commands can help to export more easily you data, since colors tags are readable only in Roam with the current extension.
 
-- Remove color tags from current block (`Atl + h` do the same)
-- Remove all color tags from current page view (current zoom, not the whole page, but collapsed bullets included)
-
-In the setting panel, you can choose if you prefer to remove only tags (default) or tags and format Markdown syntax (^^, \*\*, \_\_)
+- `Set color of highlights in current block` (__Command palette & context menu__) : once you run the command, **you have to press the first letter of the color**, or Backspace to reset to native highlights (simple `^^`).
+- `Set color of bold texts in current block` (__Command palette & context menu__) : same behavior as the precedent.
 
 
 ## Future developments
