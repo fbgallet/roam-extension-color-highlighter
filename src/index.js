@@ -142,14 +142,14 @@ function removeHighlightsFromBlock(uid=null, removeMarkups=false) {
   },10)
 }
 
-function removeFromContent(content, removeMarkups=false) {
+function removeFromContent(content, removeMarkups=false, onlyForThisMarkup='') {
+  for(let i=0;i<colorTags.length;i++) {
+    content = content.replaceAll(colorTags[i]+onlyForThisMarkup,""+onlyForThisMarkup);  
+  }
   if (removeMarkups) {
     content = content.replaceAll("^^","");
     content = content.replaceAll("**","");
     content = content.replaceAll("__","");
-  }
-  for(let i=0;i<colorTags.length;i++) {
-    content = content.replaceAll(colorTags[i],"");  
   }
   return content;
 }
@@ -170,6 +170,40 @@ function recursiveCleaning(branch) {
     }
     if (branch[i].children) recursiveCleaning(branch[i].children);
   }
+}
+
+function setColorInBlock(e,markup) {
+  let color = checkColorKeys(e.key);
+  if (e.key == 'Backspace') {
+    color = 'remove';
+    e.preventDefault();
+  }
+  if (color!='') {
+    if (color == 'remove') color = '';
+    let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.['block-uid'];
+    let content = getBlockContent(uid);  
+    let newContent = removeFromContent(content, false, markup);
+    let splitContent = newContent.split(markup);
+    for(let i=0;i<splitContent.length;i+=2){
+      splitContent[i] += color;
+    }
+    newContent = splitContent.join(markup);
+    setTimeout(function() {
+      window.roamAlphaAPI
+                .updateBlock({'block': 
+                    {'uid': uid,
+                    'string': newContent}});
+    },10)
+    e.preventDefault();
+  }
+}
+
+function setColorCallback(markup) {
+  const argListener = {
+    capture: true,
+    once: true
+  };
+  addEventListener("keydown", function(e) { setColorInBlock(e,markup);}, argListener);
 }
 
 function getPageViewTreeByBlockUid(bUid) {
@@ -238,24 +272,34 @@ export default {
     onload:  ({extensionAPI}) => {
         extensionAPI.settings.panel.create(panelConfig);
         window.roamAlphaAPI.ui.commandPalette.addCommand({
-            label: "Remove color tags from current block (Color Highlighter extension)",
-            callback: async () => {
+            label: "Color Highlighter: Remove color tags from current BLOCK",
+            callback: () => {
                 let block = window.roamAlphaAPI.ui.getFocusedBlock();              
                 removeHighlightsFromBlock(block["block-uid"], removeOption);
                 setTimeout(function(){window.roamAlphaAPI.ui.setBlockFocusAndSelection({location: block})},250);
             }
-        })
+        });
         window.roamAlphaAPI.ui.commandPalette.addCommand({
-          label: "Remove all color tags from current page zoom view (Color Highlighter extension)",
+          label: "Color Highlighter: Remove color tags from current PAGE zoom view",
           callback: async () => {        
             let uid = await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();             
-            console.log(uid);
             const tree = getPageViewTreeByBlockUid(uid);
-            console.log(tree);
             if (typeof(tree.string) != 'undefined') removeHighlightsFromBlock(tree.uid, removeOption);
             recursiveCleaning(tree.children);
           }
-      }) 
+        });
+        window.roamAlphaAPI.ui.commandPalette.addCommand({
+          label: "Color Highlighter: Set color of highlights in current block (or reset with Backspace)",
+          callback: () => {
+            setColorCallback('^^');
+          }
+        })
+        window.roamAlphaAPI.ui.commandPalette.addCommand({
+          label: "Color Highlighter: Set color of bolded texts in current block (or reset with Backspace)",
+          callback: () => {
+            setColorCallback('**');
+          }
+        }) 
     //    if (extensionAPI.settings.get("color-tags") == null)
             colorTags = colorTagsDefault;
     //    else colorTags = extensionAPI.settings.get("color-tags").replace(' ','').split(",");
