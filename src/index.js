@@ -1,3 +1,5 @@
+import { Intent, Position, Toaster } from "@blueprintjs/core";
+
 var hFlag, tFlag, needConfirmKey;
 const colorTagsDefault = ["#c:blue", "#c:BLUE", 
                         "#c:fuchsia", "#c:FUCHSIA",
@@ -10,9 +12,14 @@ var colorTags = [];
 const colorKeysDefault = ["b", "B", "f", "F", "g", "G", "o", "O",
                           "s", "S", "r", "R", "t", "y", "w"];
 var colorKeys = [];
-var cursorAfter, removeOption, keepColor;
+var cursorAfter, removeOption, keepColor, toastOption;
 var lastColorH = '';
 var lastColorT = '';
+
+const AppToaster = Toaster.create({
+  className: "recipe-toaster",
+  position: Position.TOP
+});
 
 function keyHighlight(e) {
   if (hFlag) {
@@ -28,7 +35,13 @@ function keyHighlight(e) {
         e.preventDefault();
       }
     }
-    if (e.ctrlKey) needConfirmKey=false;
+    else {
+      if (e.ctrlKey) {
+        if (toastOption) AppToaster.clear();
+        needConfirmKey=false;
+        if (toastOption) colorToast();
+      }
+    }
     if (e.key == 'Backspace') {
       hFlag = false;
       window.roamAlphaAPI.data.undo();
@@ -49,7 +62,13 @@ function keyHighlight(e) {
         e.preventDefault();
       }
     }
-    if (e.ctrlKey) needConfirmKey=false;
+    else {
+      if (e.ctrlKey) {
+        if (toastOption) AppToaster.clear();
+        needConfirmKey=false;
+        if (toastOption) colorToast();
+      }
+    }
     if (e.key == 'Backspace') {
       tFlag = false;
       window.roamAlphaAPI.data.undo();
@@ -63,8 +82,17 @@ function keyHighlight(e) {
         setTimeout(function() {addColor(lastColorH, 'h');},100);
       }
       hFlag = true;
-      if (hasSelection()) needConfirmKey=false;
-      else needConfirmKey=true;
+      if (hasSelection()) {
+        needConfirmKey=false;
+        if (toastOption) colorToast();
+      }
+      else {
+        needConfirmKey=true;
+        if (toastOption) AppToaster.show({ 
+          message: "Press Ctrl or Cmd to activate the color choice.", 
+          intent: Intent.WARNING,
+          timeout: 2000});
+      }
       return;
     }
     if (e.ctrlKey && e.key == "b") {
@@ -72,8 +100,17 @@ function keyHighlight(e) {
         setTimeout(function() {addColor(lastColorT, 't');},100); 
       }
       tFlag = true;
-      if (hasSelection()) needConfirmKey=false;
-      else needConfirmKey=true;
+      if (hasSelection()) {
+        if (toastOption) colorToast();
+        needConfirmKey=false;
+      }
+      else {
+        needConfirmKey=true;
+        if (toastOption)  AppToaster.show({ 
+          message: "Press Ctrl or Cmd to activate the color choice.", 
+          intent: Intent.WARNING,
+          timeout: 2000});
+      }
     }
     if ((e.altKey && e.key == "h")) {
       //hFlag = true;
@@ -87,6 +124,18 @@ function hasSelection() {
   let input = document.activeElement;
   if (input.selectionStart!=input.selectionEnd) return true;
   else return false;
+}
+
+function colorToast() {
+  let letterList = colorTags.join(', ').replaceAll('#c:','');
+  AppToaster.show({ 
+    message: "Colors: "+letterList,
+    intent: Intent.PRIMARY
+  });
+  AppToaster.show({ 
+    message: "Press the first letter of a color or `Backspace` to reset to default Roam format.",
+    intent: Intent.PRIMARY
+  });
 }
 
 function checkColorKeys(key) {
@@ -198,6 +247,7 @@ function setColorInBlock(e,uid,markup) {
 }
 
 function setColorCallback(uid, markup) {
+  colorToast();
   const argListener = {
     capture: true,
     once: true
@@ -264,8 +314,15 @@ const panelConfig = {
                       onChange: (evt) => { 
                         removeOption = !removeOption;
                       }}},
+        {id:          "toast-option",
+        name:        "Display popup reminder",
+        description: "Display popup notifications to remind to press a key and the list of colors",
+        action:      {type:     "switch",
+                      onChange: (evt) => { 
+                        toastOption = !toastOption;
+                      }}}
     ]
-  }; 
+}; 
 
 export default {
     onload:  ({extensionAPI}) => {
@@ -328,6 +385,7 @@ export default {
     //    if (extensionAPI.settings.get("color-keys") == null)
             colorKeys = colorKeysDefault;
     //    else colorTags = extensionAPI.settings.get("color-keys").replace(' ','').split(",");
+
         if (extensionAPI.settings.get("keep-color") == null) {
           extensionAPI.settings.set("keep-color", false);
           keepColor = false;
@@ -341,8 +399,13 @@ export default {
         if (extensionAPI.settings.get("remove-option") == null) {
           extensionAPI.settings.set("remove-option", false);
           removeOption = false;
-      }
-      else removeOption = extensionAPI.settings.get("remove-option");
+        }
+        else removeOption = extensionAPI.settings.get("remove-option"); 
+        if (extensionAPI.settings.get("toast-option") == null) {
+          extensionAPI.settings.set("toast-option", true);
+          toastOption = true;
+        }
+        else toastOption = extensionAPI.settings.get("toast-option"); 
 
         window.addEventListener("keydown", keyHighlight);
         hFlag = false;   
