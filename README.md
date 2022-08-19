@@ -63,7 +63,8 @@ These commands can help to export more easily you data, since colors tags are re
 - `Set color of highlights in current block` (__Command palette & context menu__) : once you run the command, **you have to press the first letter of the color**, or Backspace to reset to native highlights (simple `^^`).
 - `Set color of bold texts in current block` (__Command palette & context menu__) : same behavior as the precedent.
 
-[See versions changelog here](https://github.com/fbgallet/roam-extension-color-highlighter/edit/main/CHANGELOG.md)
+## Change log
+  [See versions changelog here](https://github.com/fbgallet/roam-extension-color-highlighter/edit/main/CHANGELOG.md)
 
 ## Future developments
 
