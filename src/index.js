@@ -60,11 +60,62 @@ function keyHighlight(e) {
       tFlag = false;
       hFlag = false;
       needConfirmKey = false;
-      return;
+      //return;
     }
   }
+  if (!hFlag && !tFlag) {
+    if ((e.ctrlKey || e.metaKey) && e.key == "h") {
+      if (keepColor && lastColorH != "") {
+        setTimeout(function () {
+          addColor(lastColorH, "h");
+        }, 100);
+      }
+      hFlag = true;
+      if (!alwaysConfirm && hasSelection()) {
+        needConfirmKey = false;
+        if (toastOption) colorToast();
+      } else {
+        needConfirmKey = true;
+        if (toastOption)
+          AppToaster.show({
+            message: "Press " + confirmKey + " to activate the color choice.",
+            intent: Intent.WARNING,
+            timeout: 2000,
+          });
+      }
+      return;
+    } else if ((e.ctrlKey || e.metaKey) && e.key == "b") {
+      if (keepColor && lastColorT != "") {
+        setTimeout(function () {
+          addColor(lastColorT, "t");
+        }, 100);
+      }
+      tFlag = true;
+      if (!alwaysConfirm && hasSelection()) {
+        if (toastOption) colorToast();
+        needConfirmKey = false;
+      } else {
+        if (toastOption)
+          lastToaster = AppToaster.show({
+            message: "Press " + confirmKey + " to activate the color choice.",
+            intent: Intent.WARNING,
+            timeout: 2000,
+          });
+        needConfirmKey = true;
+      }
+      return;
+    }
+    if (e.altKey && e.key == "h") {
+      removeHighlightsFromBlock(null, removeOption);
+      setCursorPosition(document.activeElement);
+    }
+  }
+
   if (hFlag) {
+    console.log("listener");
+    console.log(e);
     if (!e.shiftKey && !(e.key === confirmKey)) hFlag = false;
+    console.log(hFlag);
     if (!needConfirmKey) {
       let color;
       if (e.key === "Home") {
@@ -131,50 +182,6 @@ function keyHighlight(e) {
       lastColorT = "";
       e.preventDefault();
     }
-  }
-  if ((e.ctrlKey || e.metaKey) && e.key == "h") {
-    if (keepColor && lastColorH != "") {
-      setTimeout(function () {
-        addColor(lastColorH, "h");
-      }, 100);
-    }
-    hFlag = true;
-    if (!alwaysConfirm && hasSelection()) {
-      needConfirmKey = false;
-      if (toastOption) colorToast();
-    } else {
-      needConfirmKey = true;
-      if (toastOption)
-        AppToaster.show({
-          message: "Press " + confirmKey + " to activate the color choice.",
-          intent: Intent.WARNING,
-          timeout: 2000,
-        });
-    }
-    return;
-  } else if ((e.ctrlKey || e.metaKey) && e.key == "b") {
-    if (keepColor && lastColorT != "") {
-      setTimeout(function () {
-        addColor(lastColorT, "t");
-      }, 100);
-    }
-    tFlag = true;
-    if (!alwaysConfirm && hasSelection()) {
-      if (toastOption) colorToast();
-      needConfirmKey = false;
-    } else {
-      if (toastOption)
-        lastToaster = AppToaster.show({
-          message: "Press " + confirmKey + " to activate the color choice.",
-          intent: Intent.WARNING,
-          timeout: 2000,
-        });
-      needConfirmKey = true;
-    }
-  }
-  if (e.altKey && e.key == "h") {
-    removeHighlightsFromBlock(null, removeOption);
-    setCursorPosition(document.activeElement);
   }
 }
 
@@ -284,7 +291,7 @@ function recursiveCleaning(branch) {
 }
 
 function setColorInBlock(e, uid, markup) {
-  if (toastOption) AppToaster.clear();
+  AppToaster.clear();
   let color = checkColorKeys(e.key);
   if (e.key == "Backspace") {
     color = "remove";
