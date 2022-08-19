@@ -1,6 +1,8 @@
 import { Intent, Position, Toaster } from "@blueprintjs/core";
 
-var hFlag, tFlag, needConfirmKey;
+var hFlag = false,
+  tFlag = false,
+  needConfirmKey = false;
 const colorTagsDefault = [
   "#c:blue",
   "#c:BLUE",
@@ -36,36 +38,57 @@ const colorKeysDefault = [
   "y",
   "w",
 ];
+
 var colorKeys = [];
 var cursorAfter, removeOption, keepColor, toastOption;
 var lastColorH = "";
 var lastColorT = "";
+var lastToaster = "";
+var confirmKey = "Control";
+var alwaysConfirm = false;
 
 const AppToaster = Toaster.create({
   className: "recipe-toaster",
   position: Position.TOP,
+  maxToasts: 1,
 });
 
 function keyHighlight(e) {
+  if (hFlag || tFlag) {
+    if ((e.ctrlKey || e.metaKey) && (e.key == "b" || e.key == "h")) {
+      if (toastOption) AppToaster.clear();
+      tFlag = false;
+      hFlag = false;
+      needConfirmKey = false;
+      return;
+    }
+  }
   if (hFlag) {
-    if (!e.shiftKey && !(e.ctrlKey || e.metaKey)) hFlag = false;
+    if (!e.shiftKey && !(e.key === confirmKey)) hFlag = false;
     if (!needConfirmKey) {
-      let color = checkColorKeys(e.key);
+      let color;
+      if (e.key === "Home") {
+        color = lastColorH;
+        e.preventDefault();
+      } else color = checkColorKeys(e.key);
       if (color != "") {
+        hFlag = false;
         if (keepColor && lastColorH != "") {
           window.roamAlphaAPI.data.undo();
           lastColorH = color;
         }
         setTimeout(function () {
           addColor(color, "h");
-        }, 50);
+        }, 20);
         e.preventDefault();
       }
+      if (toastOption) AppToaster.clear();
     } else {
-      if (e.ctrlKey || e.metaKey) {
+      if (e.key === confirmKey) {
         if (toastOption) AppToaster.clear();
         needConfirmKey = false;
         if (toastOption) colorToast();
+        e.preventDefault();
       }
     }
     if (e.key == "Backspace") {
@@ -74,26 +97,32 @@ function keyHighlight(e) {
       lastColorH = "";
       e.preventDefault();
     }
-  }
-  if (tFlag) {
-    if (!e.shiftKey && !(e.ctrlKey || e.metaKey)) tFlag = false;
+  } else if (tFlag) {
+    if (!e.shiftKey && !(e.key === confirmKey)) tFlag = false;
     if (!needConfirmKey) {
-      let color = checkColorKeys(e.key);
+      let color;
+      if (e.key === "Home") {
+        color = lastColorT;
+        e.preventDefault();
+      } else color = checkColorKeys(e.key);
       if (color != "") {
+        tFlag = false;
         if (keepColor && lastColorT != "") {
           window.roamAlphaAPI.data.undo();
           lastColorT = color;
         }
+        if (toastOption) AppToaster.clear();
         setTimeout(function () {
           addColor(color, "t");
-        }, 50);
+        }, 20);
         e.preventDefault();
       }
     } else {
-      if (e.ctrlKey || e.metaKey) {
+      if (e.key === confirmKey) {
         if (toastOption) AppToaster.clear();
         needConfirmKey = false;
         if (toastOption) colorToast();
+        e.preventDefault();
       }
     }
     if (e.key == "Backspace") {
@@ -103,53 +132,49 @@ function keyHighlight(e) {
       e.preventDefault();
     }
   }
-  if (tFlag != true && hFlag != true) {
-    if ((e.ctrlKey || e.metaKey) && e.key == "h") {
-      if (keepColor && lastColorH != "") {
-        setTimeout(function () {
-          addColor(lastColorH, "h");
-        }, 100);
-      }
-      hFlag = true;
-      if (hasSelection()) {
-        needConfirmKey = false;
-        if (toastOption) colorToast();
-      } else {
-        needConfirmKey = true;
-        if (toastOption)
-          AppToaster.show({
-            message: "Press Ctrl or Cmd to activate the color choice.",
-            intent: Intent.WARNING,
-            timeout: 2000,
-          });
-      }
-      return;
+  if ((e.ctrlKey || e.metaKey) && e.key == "h") {
+    if (keepColor && lastColorH != "") {
+      setTimeout(function () {
+        addColor(lastColorH, "h");
+      }, 100);
     }
-    if ((e.ctrlKey || e.metaKey) && e.key == "b") {
-      if (keepColor && lastColorT != "") {
-        setTimeout(function () {
-          addColor(lastColorT, "t");
-        }, 100);
-      }
-      tFlag = true;
-      if (hasSelection()) {
-        if (toastOption) colorToast();
-        needConfirmKey = false;
-      } else {
-        needConfirmKey = true;
-        if (toastOption)
-          AppToaster.show({
-            message: "Press Ctrl or Cmd to activate the color choice.",
-            intent: Intent.WARNING,
-            timeout: 2000,
-          });
-      }
+    hFlag = true;
+    if (!alwaysConfirm && hasSelection()) {
+      needConfirmKey = false;
+      if (toastOption) colorToast();
+    } else {
+      needConfirmKey = true;
+      if (toastOption)
+        AppToaster.show({
+          message: "Press " + confirmKey + " to activate the color choice.",
+          intent: Intent.WARNING,
+          timeout: 2000,
+        });
     }
-    if (e.altKey && e.key == "h") {
-      //hFlag = true;
-      removeHighlightsFromBlock(null, removeOption);
-      setCursorPosition(document.activeElement);
+    return;
+  } else if ((e.ctrlKey || e.metaKey) && e.key == "b") {
+    if (keepColor && lastColorT != "") {
+      setTimeout(function () {
+        addColor(lastColorT, "t");
+      }, 100);
     }
+    tFlag = true;
+    if (!alwaysConfirm && hasSelection()) {
+      if (toastOption) colorToast();
+      needConfirmKey = false;
+    } else {
+      if (toastOption)
+        lastToaster = AppToaster.show({
+          message: "Press " + confirmKey + " to activate the color choice.",
+          intent: Intent.WARNING,
+          timeout: 2000,
+        });
+      needConfirmKey = true;
+    }
+  }
+  if (e.altKey && e.key == "h") {
+    removeHighlightsFromBlock(null, removeOption);
+    setCursorPosition(document.activeElement);
   }
 }
 
@@ -162,12 +187,10 @@ function hasSelection() {
 function colorToast() {
   let letterList = colorTags.join(", ").replaceAll("#c:", "");
   AppToaster.show({
-    message: "Colors: " + letterList,
-    intent: Intent.PRIMARY,
-  });
-  AppToaster.show({
     message:
-      "Press the first letter of a color or `Backspace` to reset to default Roam format.",
+      "Press the first letter of a color (" +
+      letterList +
+      "), or `Home` for last color, or `Backspace` to reset to default Roam format.",
     intent: Intent.PRIMARY,
   });
 }
@@ -180,10 +203,12 @@ function checkColorKeys(key) {
 }
 
 function addColor(color, flag) {
-  if (keepColor) {
+  /*if (keepColor) {
     if (flag == "h" && lastColorH == "") lastColorH = color;
     if (flag == "t" && lastColorT == "") lastColorT = color;
-  }
+  }*/
+  if (flag == "h") lastColorH = color;
+  if (flag == "t") lastColorT = color;
   let tagLength = color.length + 1;
   let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
   let content = getBlockContent(uid);
@@ -209,7 +234,7 @@ function setCursorPosition(input, start = 0, end = 0, length = 0) {
         input.selectionEnd = end + length;
       }
     }
-  }, 40);
+  }, 80);
   return;
 }
 
@@ -248,7 +273,6 @@ function recursiveCleaning(branch) {
     let nodeContent = branch[i].string;
     let newContent = removeFromContent(nodeContent, removeOption);
     if (nodeContent.length != newContent.length) {
-      console.log(nodeContent);
       setTimeout(function () {
         window.roamAlphaAPI.updateBlock({
           block: { uid: nodeUid, string: newContent },
@@ -260,6 +284,7 @@ function recursiveCleaning(branch) {
 }
 
 function setColorInBlock(e, uid, markup) {
+  if (toastOption) AppToaster.clear();
   let color = checkColorKeys(e.key);
   if (e.key == "Backspace") {
     color = "remove";
@@ -297,6 +322,23 @@ function setColorCallback(uid, markup) {
     },
     argListener
   );
+}
+
+function chooseConfirmKey(key) {
+  switch (key) {
+    case "Command or Meta":
+      confirmKey = "Meta";
+      break;
+    case "Space":
+      confirmKey = " ";
+      break;
+    case "Control":
+    case "Alt":
+    case "Insert":
+    case "c":
+    default:
+      confirmKey = key;
+  }
 }
 
 function getPageViewTreeByBlockUid(bUid) {
@@ -343,6 +385,31 @@ const panelConfig = {
         type: "switch",
         onChange: (evt) => {
           keepColor = !keepColor;
+        },
+      },
+    },
+    {
+      id: "confirmKeyOption",
+      name: "Trigger color-mode key",
+      description:
+        "Key to press before choosing a color, and after Cmd-Ctrl + h or + b, if no text is selected",
+      action: {
+        type: "select",
+        items: ["Control", "Alt", "Command or Meta", "Space", "Insert", "c"],
+        onChange: (evt) => {
+          chooseConfirmKey(evt);
+        },
+      },
+    },
+    {
+      id: "confirmOption",
+      name: "Always need to press trigger color-mode key",
+      description:
+        "Always ask for confirmation to enable color-mode, with or without selected text",
+      action: {
+        type: "switch",
+        onChange: (evt) => {
+          alwaysConfirm = !alwaysConfirm;
         },
       },
     },
@@ -454,8 +521,8 @@ export default {
       keepColor = false;
     } else keepColor = extensionAPI.settings.get("keep-color");
     if (extensionAPI.settings.get("cursor-position") == null) {
-      extensionAPI.settings.set("cursor-position", true);
-      cursorAfter = true;
+      extensionAPI.settings.set("cursor-position", false);
+      cursorAfter = false;
     } else cursorAfter = extensionAPI.settings.get("cursor-position");
     if (extensionAPI.settings.get("remove-option") == null) {
       extensionAPI.settings.set("remove-option", false);
@@ -465,6 +532,12 @@ export default {
       extensionAPI.settings.set("toast-option", true);
       toastOption = true;
     } else toastOption = extensionAPI.settings.get("toast-option");
+    if (extensionAPI.settings.get("confirmKeyOption") == null) {
+      extensionAPI.settings.set("confirmKeyOption", confirmKey);
+    } else confirmKey = extensionAPI.settings.get("confirmKeyOption");
+    if (extensionAPI.settings.get("confirmOption") == null) {
+      extensionAPI.settings.set("confirmOption", alwaysConfirm);
+    } else alwaysConfirm = extensionAPI.settings.get("confirmOption");
 
     window.addEventListener("keydown", keyHighlight);
     hFlag = false;

@@ -1,156 +1,186 @@
 /* Credit to @CatoMinor3 for this great CSS trick !*/
 
-[data-tag^="c:"] {
-    display:none !important;  
-}
-[data-tag^="c:"] + .rm-highlight, 
-[data-tag^="c:"] + .rm-page-ref--link {
-    color: #fff;
-	border-radius: 2px;
-	padding-left: 2px;
-	padding-right: 2px;
-  margin-left: -6px;
+:root {
+  --cl-blue-200: #a7d9f1ff; /*--uranian-blue:*/
+  --cl-blue-700: #0254a0ff; /*--usafa-blue:*/
 }
 
-[data-tag^="c:"] + .rm-bold, 
+[data-tag^="c:"] {
+  display: none !important;
+}
+[data-tag^="c:"] + .rm-highlight,
+[data-tag^="c:"] + .rm-page-ref--link {
+  color: #fff;
+  border-radius: 2px;
+  padding-left: 2px;
+  padding-right: 2px;
+  margin-left: -0.37em;
+}
+
+[data-tag^="c:"] + .rm-bold,
 [data-tag^="c:"] + em {
-  margin-left: -6px;
+  margin-left: -0.28em;
+  font-weight: 500;
+}
+.rm-zoom-item-content [data-tag^="c:"] + .rm-highlight,
+.rm-zoom-item-content [data-tag^="c:"] + .rm-page-ref--link,
+.rm-autocomplete-result [data-tag^="c:"] + .rm-highlight,
+.rm-autocomplete-result [data-tag^="c:"] + .rm-page-ref--link,
+.rm-search-path [data-tag^="c:"] + .rm-highlight,
+.rm-search-path [data-tag^="c:"] + .rm-page-ref--link {
+  margin-left: 0px;
+}
+
+.rm-zoom-item-content [data-tag^="c:"] + .rm-bold,
+.rm-zoom-item-content [data-tag^="c:"] + em,
+.rm-autocomplete-result [data-tag^="c:"] + .rm-bold,
+.rm-autocomplete-result [data-tag^="c:"] + em,
+.rm-search-path [data-tag^="c:"] + .rm-bold,
+.rm-search-path [data-tag^="c:"] + em {
+  margin-left: 0px;
   font-weight: 600;
 }
 
 [data-tag="c:blue"] + .rm-highlight,
 [data-tag="c:blue"] + .rm-page-ref--link {
-  color: black !important;
-background-color: #AEDBFE !important;
+  color: black;
+  background-color: #aedbfe;
+  /* background-color: var(--cl-blue-200); */
 }
 [data-tag="c:BLUE"] + .rm-highlight,
 [data-tag="c:BLUE"] + .rm-page-ref--link {
-	background-color: #0074D9 !important;
+  background-color: #0074d9 !important;
+  /* background-color: var(--cl-blue-700); */
 }
-[data-tag="c:blue"] + .rm-bold, 
+[data-tag="c:blue"] + .rm-bold,
 [data-tag="c:blue"] + em {
-color: #0074D9;
+  /* color: #0074d9; */
+  color: var(--cl-blue-700);
 }
-[data-tag="c:BLUE"] + .rm-bold, 
+[data-tag="c:BLUE"] + .rm-bold,
 [data-tag="c:BLUE"] + em {
-color: #0000FF;
-font-weight: 700;
+  /* color: #0000ff; */
+  color: var(--cl-blue-700);
+  font-weight: 700;
 }
 [data-tag="c:fuchsia"] + .rm-highlight,
 [data-tag="c:fuchsia"] + .rm-page-ref--link {
-color: black !important;
-background-color: #FFA0EA !important;
+  color: black;
+  background-color: #ffa0ea;
 }
 [data-tag="c:FUCHSIA"] + .rm-highlight,
 [data-tag="c:FUCHSIA"] + .rm-page-ref--link {
-background-color: #F012BE !important;
+  background-color: #f012be;
 }
-[data-tag="c:fuchsia"] + .rm-bold, 
+[data-tag="c:fuchsia"] + .rm-bold,
 [data-tag="c:fuchsia"] + em {
-color: #FFA0EA;
+  color: #ffa0ea;
 }
-[data-tag="c:FUCHSIA"] + .rm-bold, 
+[data-tag="c:FUCHSIA"] + .rm-bold,
 [data-tag="c:FUCHSIA"] + em {
-color: #F012BE;
-font-weight: 700;
+  color: #f012be;
+  font-weight: 700;
 }
 
 [data-tag="c:green"] + .rm-highlight,
 [data-tag="c:green"] + .rm-page-ref--link {
-  color: #000000 !important;
-  background-color: #2ECC404F !important;
+  color: #000000;
+  background-color: #2ecc404f;
+  /* background-color: var(--cl-green-200); */
 }
 [data-tag="c:GREEN"] + .rm-highlight,
 [data-tag="c:GREEN"] + .rm-page-ref--link {
-background-color: #32CD32 !important;
+  background-color: #32cd32 !important;
+  /* background-color: var(--cl-green-700); */
 }
 [data-tag="c:green"] + .rm-bold,
 [data-tag="c:green"] + em {
-color: #32CD32;
+  color: #32cd32;
+  /* color: var(--cl-green-200); */
 }
 [data-tag="c:GREEN"] + .rm-bold,
 [data-tag="c:GREEN"] + em {
-    color: #008000 !important;
+  color: #008000 !important;
 }
 
 [data-tag="c:orange"] + .rm-highlight,
 [data-tag="c:orange"] + .rm-page-ref--link {
-color: black !important;
-background-color: #FFAF69 !important;
+  color: black !important;
+  background-color: #ffaf69 !important;
 }
 [data-tag="c:ORANGE"] + .rm-highlight,
 [data-tag="c:ORANGE"] + .rm-page-ref--link {
-background-color: #FF851B !important;
+  background-color: #ff851b !important;
 }
 [data-tag="c:orange"] + .rm-bold,
 [data-tag="c:orange"] + em {
-color: #FF851B;
+  color: #ff851b;
 }
 [data-tag="c:ORANGE"] + .rm-bold,
 [data-tag="c:ORANGE"] + em {
-color: #fe7702;
-font-weight: 700;
+  color: #fe7702;
+  font-weight: 700;
 }
 
 [data-tag="c:silver"] + .rm-highlight,
 [data-tag="c:silver"] + .rm-page-ref--link {
-color:black !important;
-background-color: #DDDDDD !important;
+  color: black !important;
+  background-color: #dddddd !important;
 }
 /* GREY */
 [data-tag="c:SILVER"] + .rm-highlight,
 [data-tag="c:SILVER"] + .rm-page-ref--link {
-background-color: #AAAAAA !important;
+  background-color: #aaaaaa !important;
 }
 [data-tag="c:silver"] + .rm-bold,
 [data-tag="c:silver"] + em {
-color: #DDDDDD;
+  color: #dddddd;
 }
 [data-tag="c:SILVER"] + .rm-bold,
 [data-tag="c:SILVER"] + em {
-color: #AAAAAA; 
-font-weight: 700;  
+  color: #aaaaaa;
+  font-weight: 700;
 }
 
 [data-tag="c:red"] + .rm-highlight,
 [data-tag="c:red"] + .rm-page-ref--link {
-color: #000000 !important;
-background-color: #FFAEB6 !important;
+  color: #000000 !important;
+  background-color: #ffaeb6 !important;
 }
 [data-tag="c:RED"] + .rm-highlight,
 [data-tag="c:RED"] + .rm-page-ref--link {
-background-color: #FF0000 !important;
+  background-color: #ff0000 !important;
 }
 [data-tag="c:red"] + .rm-bold,
 [data-tag="c:red"] + em {
-  color: #FF0000 !important;
+  color: #ff0000 !important;
 }
 [data-tag="c:RED"] + .rm-bold,
 [data-tag="c:RED"] + em {
-color: #E60D00;
-font-weight: 700;
+  color: #e60d00;
+  font-weight: 700;
 }
 
 [data-tag="c:teal"] + .rm-highlight,
 [data-tag="c:teal"] + .rm-page-ref--link {
-background-color: #39CCCC !important;
+  background-color: #39cccc !important;
 }
 [data-tag="c:teal"] + .rm-bold,
 [data-tag="c:teal"] + em {
-color: #39CCCC;    
+  color: #39cccc;
 }
 
 [data-tag="c:yellow"] + .rm-highlight,
 [data-tag="c:yellow"] + .rm-page-ref--link {
-color: black !important;
-background-color: #FFDC00 !important;
+  color: black !important;
+  background-color: #ffdc00 !important;
 }
 [data-tag="c:yellow"] + .rm-bold,
 [data-tag="c:yellow"] + em {
-color: #FFDC00;
+  color: #ffdc00;
 }
 
 [data-tag="c:black"] + .rm-highlight,
 [data-tag="c:black"] + .rm-page-ref--link {
-background-color: #111111 !important;
+  background-color: #111111 !important;
 }
