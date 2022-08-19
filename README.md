@@ -1,4 +1,4 @@
-# roam-extension-color-highlighter
+# Color Highlighter
 
 ### Highlight text or write text with different colors. Keyboard only.
 
@@ -10,11 +10,11 @@ Select some part of your text inside a block, add Highight or bold with native R
 
 The extension will insert a tag like `#c:green` (or #c:GREEN) before highlight or bold markdown syntax, the result will be e.g.: `#c:green **my green text**`. Of course, these tags are only visible when you edit the block. _Credit to @CatoMinor3 for the great CSS trick allowing to customize highlighted and bold texts in Roam!_
 
-By default, you must choose a color each time, but you enable `Keep last color` option, the last applied color will be automaticaly applied when pressing `Ctrl/Cmd + b/h` next times. When tag color has just been inserted, you can change it by pressing the corresponding color letter or reset to default bold/highlight by pression `Backspace`.
+By default, you must choose a color each time, but by pressing `Home` key, you get the last applied color, and you enable `Keep last color` option, the last applied color will be automaticaly applied when pressing `Ctrl/Cmd + b/h` next times. When tag color has just been inserted, you can change it by pressing the corresponding color letter or reset to default bold/highlight by pression `Backspace`.
 
 After a color choice, the **cursor** will be placed just next the colored text, right next the markdown characters to be exact, so you can write something else after. In option (panel settings above), you can choose to keep Roam's default behavior: highlighted or bolded text will be selected.
 
-⚠️ If no text is initialy selected (you want to write something new in bold or highlight mode), the cursor will be placed inside the markups, so you can immediatly write. But since the color trigger letters could conflict with the first letter you might write, **you need to enable "color mode" by pressing again "Ctrl/Cmd" in this case**. Then, you can choose the color.
+⚠️ If no text is initialy selected (you want to write something new in bold or highlight mode), the cursor will be placed inside the markups, so you can immediatly write. But since the color trigger letters could conflict with the first letter you might write, **you need to enable "color-mode" by pressing again "Ctrl/Cmd" in this case**. Then, you can choose the color. In option, you can force to ask for this confirmation to enter in color-mode, if you notice that you get some color unintentionally. You can also change the key to be pressed to confirm the change to the color-mode. 'Control' key is set by default, but it can cause some confusion with the usual use of the control key for highlighting or bolding. Choose another key if you find that you are triggering colors unintentionally
 
 Current default set of colors (_initial letter ⇒ tag_)
 
@@ -34,6 +34,22 @@ Current default set of colors (_initial letter ⇒ tag_)
 - y ⇒ #c:yellow
 - w ⇒ #c:black
 
+All these colors are customizable. In a css block on the roam/css page, you can specify for example:
+```
+/* Set red highlight example */
+[data-tag="c:red"] + .rm-highlight {
+  background-color: #FFD6D3 !important;
+}
+/* Set blue text example */
+[data-tag="c:blue"] + .rm-bold {
+  color: #84C9FF !important;
+}
+/* you can also use variables eventually defined in the :root of your theme */
+[data-tag="c:red"] + .rm-highlight {
+  background-color: var(--cl-red-100) !important;
+}
+```
+
 Don't overuse colors ! Don't forget that the extension inserts tags in your content, which reduces its portability (see below the commands to quickly remove tags).
 
 
@@ -47,6 +63,7 @@ These commands can help to export more easily you data, since colors tags are re
 - `Set color of highlights in current block` (__Command palette & context menu__) : once you run the command, **you have to press the first letter of the color**, or Backspace to reset to native highlights (simple `^^`).
 - `Set color of bold texts in current block` (__Command palette & context menu__) : same behavior as the precedent.
 
+[See versions changelog here](https://github.com/fbgallet/roam-extension-color-highlighter/edit/main/CHANGELOG.md)
 
 ## Future developments
 
