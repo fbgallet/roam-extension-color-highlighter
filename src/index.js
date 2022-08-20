@@ -112,10 +112,7 @@ function keyHighlight(e) {
   }
 
   if (hFlag) {
-    console.log("listener");
-    console.log(e);
     if (!e.shiftKey && !(e.key === confirmKey)) hFlag = false;
-    console.log(hFlag);
     if (!needConfirmKey) {
       let color;
       if (e.key === "Home") {
