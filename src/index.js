@@ -46,6 +46,29 @@ var lastColorT = "";
 var lastToaster = "";
 var confirmKey = "Control";
 var alwaysConfirm = false;
+var colorApplied = false;
+var position = function (elt = document.activeElement) {
+  this.elt = elt;
+  this.s = elt.selectionStart;
+  this.e = elt.selectionEnd;
+
+  this.setPos = function (shift = 0) {
+    this.elt = document.activeElement;
+    this.s = this.elt.selectionStart + shift;
+    this.e = this.elt.selectionEnd + shift;
+  };
+  this.isEgal = function (pos) {
+    if (this.elt === pos.elt && this.s === pos.s && this.e === pos.e)
+      return true;
+    else return false;
+  };
+  this.hasSelection = function () {
+    if (this.s != this.e) return true;
+    else return false;
+  };
+};
+var currentPos = new position();
+var lastPos = new position();
 
 const AppToaster = Toaster.create({
   className: "recipe-toaster",
@@ -55,23 +78,26 @@ const AppToaster = Toaster.create({
 
 function keyHighlight(e) {
   if (hFlag || tFlag) {
+    currentPos.setPos();
     if ((e.ctrlKey || e.metaKey) && (e.key == "b" || e.key == "h")) {
       if (toastOption) AppToaster.clear();
       tFlag = false;
       hFlag = false;
       needConfirmKey = false;
-      //return;
     }
   }
   if (!hFlag && !tFlag) {
     if ((e.ctrlKey || e.metaKey) && e.key == "h") {
       if (keepColor && lastColorH != "") {
+        colorApplied = true;
         setTimeout(function () {
+          currentPos.setPos();
           addColor(lastColorH, "h");
-        }, 100);
+        }, 120);
       }
       hFlag = true;
-      if (!alwaysConfirm && hasSelection()) {
+      lastPos.setPos(2);
+      if (!alwaysConfirm && lastPos.hasSelection()) {
         needConfirmKey = false;
         if (toastOption) colorToast();
       } else {
@@ -83,26 +109,30 @@ function keyHighlight(e) {
             timeout: 2000,
           });
       }
+      //      lastPos.setPos(2);
       return;
     } else if ((e.ctrlKey || e.metaKey) && e.key == "b") {
       if (keepColor && lastColorT != "") {
+        colorApplied = true;
         setTimeout(function () {
+          currentPos.setPos();
           addColor(lastColorT, "t");
-        }, 100);
+        }, 120);
       }
       tFlag = true;
       if (!alwaysConfirm && hasSelection()) {
         if (toastOption) colorToast();
         needConfirmKey = false;
       } else {
+        needConfirmKey = true;
         if (toastOption)
           lastToaster = AppToaster.show({
             message: "Press " + confirmKey + " to activate the color choice.",
             intent: Intent.WARNING,
             timeout: 2000,
           });
-        needConfirmKey = true;
       }
+      lastPos.setPos(2);
       return;
     }
     if (e.altKey && e.key == "h") {
@@ -112,23 +142,36 @@ function keyHighlight(e) {
   }
 
   if (hFlag) {
+    if (colorApplied && currentPos.isEgal(lastPos) && e.key == "Backspace") {
+      hFlag = false;
+      window.roamAlphaAPI.data.undo();
+      if (toastOption) AppToaster.clear();
+      lastColorH = "";
+      e.preventDefault();
+      colorApplied = false;
+      return;
+    }
     if (!e.shiftKey && !(e.key === confirmKey)) hFlag = false;
     if (!needConfirmKey) {
-      let color;
-      if (e.key === "Home") {
-        color = lastColorH;
-        e.preventDefault();
-      } else color = checkColorKeys(e.key);
-      if (color != "") {
-        hFlag = false;
-        if (keepColor && lastColorH != "") {
-          window.roamAlphaAPI.data.undo();
-          lastColorH = color;
+      currentPos.setPos();
+      if (currentPos.isEgal(lastPos)) {
+        let color;
+        if (e.key === "Home") {
+          color = lastColorH;
+          e.preventDefault();
+        } else color = checkColorKeys(e.key);
+        if (color != "") {
+          hFlag = false;
+          if (keepColor && lastColorH != "") {
+            window.roamAlphaAPI.data.undo();
+            lastColorH = color;
+          }
+          setTimeout(function () {
+            currentPos.setPos();
+            addColor(color, "h");
+          }, 40);
+          e.preventDefault();
         }
-        setTimeout(function () {
-          addColor(color, "h");
-        }, 20);
-        e.preventDefault();
       }
       if (toastOption) AppToaster.clear();
     } else {
@@ -139,32 +182,39 @@ function keyHighlight(e) {
         e.preventDefault();
       }
     }
-    if (e.key == "Backspace") {
-      hFlag = false;
-      window.roamAlphaAPI.data.undo();
-      lastColorH = "";
-      e.preventDefault();
-    }
   } else if (tFlag) {
+    if (colorApplied && currentPos.isEgal(lastPos) && e.key == "Backspace") {
+      tFlag = false;
+      window.roamAlphaAPI.data.undo();
+      if (toastOption) AppToaster.clear();
+      lastColorT = "";
+      e.preventDefault();
+      colorApplied = false;
+      return;
+    }
     if (!e.shiftKey && !(e.key === confirmKey)) tFlag = false;
     if (!needConfirmKey) {
-      let color;
-      if (e.key === "Home") {
-        color = lastColorT;
-        e.preventDefault();
-      } else color = checkColorKeys(e.key);
-      if (color != "") {
-        tFlag = false;
-        if (keepColor && lastColorT != "") {
-          window.roamAlphaAPI.data.undo();
-          lastColorT = color;
+      currentPos.setPos();
+      if (currentPos.isEgal(lastPos)) {
+        let color;
+        if (e.key === "Home") {
+          color = lastColorT;
+          e.preventDefault();
+        } else color = checkColorKeys(e.key);
+        if (color != "") {
+          tFlag = false;
+          if (keepColor && lastColorT != "") {
+            window.roamAlphaAPI.data.undo();
+            lastColorT = color;
+          }
+          setTimeout(function () {
+            currentPos.setPos();
+            addColor(color, "t");
+          }, 40);
+          e.preventDefault();
         }
-        if (toastOption) AppToaster.clear();
-        setTimeout(function () {
-          addColor(color, "t");
-        }, 20);
-        e.preventDefault();
       }
+      if (toastOption) AppToaster.clear();
     } else {
       if (e.key === confirmKey) {
         if (toastOption) AppToaster.clear();
@@ -173,7 +223,7 @@ function keyHighlight(e) {
         e.preventDefault();
       }
     }
-    if (e.key == "Backspace") {
+    if (colorApplied && e.key == "Backspace") {
       tFlag = false;
       window.roamAlphaAPI.data.undo();
       lastColorT = "";
@@ -182,19 +232,21 @@ function keyHighlight(e) {
   }
 }
 
-function hasSelection() {
-  let input = document.activeElement;
-  if (input.selectionStart != input.selectionEnd) return true;
-  else return false;
-}
-
-function colorToast() {
+function colorToast(withHome = true, withBackspace = false) {
   let letterList = colorTags.join(", ").replaceAll("#c:", "");
+  let homeTxt = "",
+    backspaceTxt = "";
+  if (!colorApplied && withHome) homeTxt = ", or `Home` for last color";
+  if (colorApplied || withBackspace)
+    backspaceTxt = ", or `Backspace` to reset to default Roam format";
   AppToaster.show({
     message:
       "Press the first letter of a color (" +
       letterList +
-      "), or `Home` for last color, or `Backspace` to reset to default Roam format.",
+      ")" +
+      homeTxt +
+      backspaceTxt +
+      ".",
     intent: Intent.PRIMARY,
   });
 }
@@ -207,37 +259,37 @@ function checkColorKeys(key) {
 }
 
 function addColor(color, flag) {
-  /*if (keepColor) {
-    if (flag == "h" && lastColorH == "") lastColorH = color;
-    if (flag == "t" && lastColorT == "") lastColorT = color;
-  }*/
   if (flag == "h") lastColorH = color;
   if (flag == "t") lastColorT = color;
   let tagLength = color.length + 1;
   let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
   let content = getBlockContent(uid);
-  let input = document.activeElement;
-  let start = input.selectionStart;
-  let end = input.selectionEnd;
   content =
-    content.slice(0, start - 2) + color + " " + content.slice(start - 2);
+    content.slice(0, currentPos.s - 2) +
+    color +
+    " " +
+    content.slice(currentPos.s - 2);
   window.roamAlphaAPI.updateBlock({ block: { uid: uid, string: content } });
-  setCursorPosition(document.activeElement, start, end, tagLength);
+  currentPos.setPos();
+  setCursorPosition(tagLength);
+  //  }
 }
 
-function setCursorPosition(input, start = 0, end = 0, length = 0) {
+function setCursorPosition(length = 0) {
   setTimeout(() => {
-    input = document.activeElement;
-    if (start == end)
-      input.selectionStart = input.selectionEnd = start + length;
+    let input = document.activeElement;
+    if (currentPos.s == currentPos.e)
+      input.selectionStart = input.selectionEnd = currentPos.s + length;
     else {
       if (cursorAfter)
-        input.selectionStart = input.selectionEnd = end + length + 2;
+        input.selectionStart = input.selectionEnd = currentPos.e + length + 2;
       else {
-        input.selectionStart = start + length;
-        input.selectionEnd = end + length;
+        input.selectionStart = currentPos.s + length;
+        input.selectionEnd = currentPos.e + length;
       }
     }
+    lastPos.setPos();
+    currentPos.setPos();
   }, 80);
   return;
 }
@@ -314,7 +366,7 @@ function setColorInBlock(e, uid, markup) {
 }
 
 function setColorCallback(uid, markup) {
-  colorToast();
+  colorToast(false, true);
   const argListener = {
     capture: true,
     once: true,
