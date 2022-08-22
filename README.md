@@ -64,6 +64,7 @@ These commands can help to export more easily you data, since colors tags are re
 - `Set color of bold texts in current block` (__Command palette & context menu__) : same behavior as the precedent.
 
 ## Change log
+  Version 2 is way more reliable (no more unintented color tags):
   [See versions changelog here](https://github.com/fbgallet/roam-extension-color-highlighter/edit/main/CHANGELOG.md)
 
 ## Future developments
