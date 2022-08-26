@@ -109,7 +109,6 @@ function keyHighlight(e) {
             timeout: 2000,
           });
       }
-      //      lastPos.setPos(2);
       return;
     } else if ((e.ctrlKey || e.metaKey) && e.key == "b") {
       if (keepColor && lastColorT != "") {
@@ -120,9 +119,10 @@ function keyHighlight(e) {
         }, 120);
       }
       tFlag = true;
-      if (!alwaysConfirm && hasSelection()) {
-        if (toastOption) colorToast();
+      lastPos.setPos(2);
+      if (!alwaysConfirm && lastPos.hasSelection()) {
         needConfirmKey = false;
+        if (toastOption) colorToast();
       } else {
         needConfirmKey = true;
         if (toastOption)
@@ -132,7 +132,6 @@ function keyHighlight(e) {
             timeout: 2000,
           });
       }
-      lastPos.setPos(2);
       return;
     }
     if (e.altKey && e.key == "h") {
