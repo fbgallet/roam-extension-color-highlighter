@@ -10,7 +10,7 @@ Select some part of your text inside a block, add Highight or bold with native R
 
 The extension will insert a tag like `#c:green` (or #c:GREEN) before highlight or bold markdown syntax, the result will be e.g.: `#c:green **my green text**`. Of course, these tags are only visible when you edit the block. _Credit to @CatoMinor3 for the great CSS trick allowing to customize highlighted and bold texts in Roam!_
 
-By default, you must choose a color each time, but by pressing `Home` key, you get the last applied color, and you enable `Keep last color` option, the last applied color will be automaticaly applied when pressing `Ctrl/Cmd + b/h` next times. When tag color has just been inserted, you can change it by pressing the corresponding color letter or reset to default bold/highlight by pression `Backspace`.
+By default, you must choose a color each time, but by pressing `Home` key, you get the last applied color, and if you enable `Keep last color` option, the last applied color will be automaticaly applied when pressing `Ctrl/Cmd + b/h` next times. When tag color has just been inserted, you can change it by pressing the corresponding color letter or reset to default bold/highlight by pression `Backspace`.
 
 After a color choice, the **cursor** will be placed just next the colored text, right next the markdown characters to be exact, so you can write something else after. In option (panel settings above), you can choose to keep Roam's default behavior: highlighted or bolded text will be selected.
 
@@ -53,7 +53,7 @@ All these colors are customizable. In a css block on the roam/css page, you can 
 Don't overuse colors ! Don't forget that the extension inserts tags in your content, which reduces its portability (see below the commands to quickly remove tags).
 
 
-## Commands (comand palette (Crtl/Cmd + p) and block context menu)
+## Commands (command palette (Crtl/Cmd + p) and block context menu)
 
 - `Remove color tags from current block` (`Atl + h` do the same) (__Command palette & context menu__)
 - `Remove all color tags from current page view` (__Command palette__) : it remove all color tags in  the current zoom view, not the whole page, but collapsed bullets are included.
