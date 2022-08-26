@@ -1,4 +1,7 @@
-v.2 (August 22th, 2022)
+### v.3 (August 26th, 2022)
+ Fix: colored text (with bold command) was broken, it works now properly!
+
+### v.2 (August 22th, 2022)
 
 New features:
   - Get last color with 'Home' key
