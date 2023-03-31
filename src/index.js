@@ -1,8 +1,7 @@
 import { Intent, Position, Toaster } from "@blueprintjs/core";
 
-var hFlag = false,
-  tFlag = false,
-  needConfirmKey = false;
+let flag = { h: false, b: false, i: false };
+let needConfirmKey = false;
 const colorTagsDefault = [
   "#c:blue",
   "#c:BLUE",
@@ -17,10 +16,13 @@ const colorTagsDefault = [
   "#c:red",
   "#c:RED",
   "#c:teal",
+  "#c:TEAL",
   "#c:yellow",
+  "#c:YELLOW",
   "#c:black",
+  "#c:BLACK",
 ];
-var colorTags = [];
+let colorTags = [];
 const colorKeysDefault = [
   "b",
   "B",
@@ -35,200 +37,155 @@ const colorKeysDefault = [
   "r",
   "R",
   "t",
+  "T",
   "y",
+  "Y",
   "w",
+  "W",
 ];
 
-var colorKeys = [];
-var cursorAfter, removeOption, keepColor, toastOption;
-var lastColorH = "";
-var lastColorT = "";
-var lastToaster = "";
-var confirmKey = "Control";
-var alwaysConfirm = false;
-var colorApplied = false;
-var position = function (elt = document.activeElement) {
-  this.elt = elt;
-  this.s = elt.selectionStart;
-  this.e = elt.selectionEnd;
+let colorKeys = [];
+let cursorAfter, removeOption, keepColor, toastOption;
+let lastColor = { h: "", b: "", i: "" };
+let confirmKey = "Control";
+let alwaysConfirm = false;
+let colorApplied = false;
+class CursorPosition {
+  constructor(elt = document.activeElement) {
+    this.elt = elt;
+    this.s = elt.selectionStart;
+    this.e = elt.selectionEnd;
+  }
 
-  this.setPos = function (shift = 0) {
+  setPos = (shift = 0) => {
     this.elt = document.activeElement;
     this.s = this.elt.selectionStart + shift;
     this.e = this.elt.selectionEnd + shift;
   };
-  this.isEgal = function (pos) {
+  isEgal = (pos) => {
     if (this.elt === pos.elt && this.s === pos.s && this.e === pos.e)
       return true;
     else return false;
   };
-  this.hasSelection = function () {
+  hasSelection = () => {
     if (this.s != this.e) return true;
     else return false;
   };
-};
-var currentPos = new position();
-var lastPos = new position();
+}
+let currentPos = new CursorPosition();
+let lastPos = new CursorPosition();
 
 const AppToaster = Toaster.create({
-  className: "recipe-toaster",
+  className: "color-toaster",
   position: Position.TOP,
   maxToasts: 1,
 });
 
 function keyHighlight(e) {
-  if (hFlag || tFlag) {
+  if (flag["h"] || flag["b"] || flag["i"]) {
     currentPos.setPos();
-    if ((e.ctrlKey || e.metaKey) && (e.key == "b" || e.key == "h")) {
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      (e.key == "b" || e.key == "h" || e.key == "i")
+    ) {
       if (toastOption) AppToaster.clear();
-      tFlag = false;
-      hFlag = false;
+      flag["b"] = false;
+      flag["h"] = false;
+      flag["i"] = false;
       needConfirmKey = false;
     }
   }
-  if (!hFlag && !tFlag) {
-    if ((e.ctrlKey || e.metaKey) && e.key == "h") {
-      if (keepColor && lastColorH != "") {
-        colorApplied = true;
-        setTimeout(function () {
-          currentPos.setPos();
-          addColor(lastColorH, "h");
-        }, 120);
-      }
-      hFlag = true;
-      lastPos.setPos(2);
-      if (!alwaysConfirm && lastPos.hasSelection()) {
-        needConfirmKey = false;
-        if (toastOption) colorToast();
-      } else {
-        needConfirmKey = true;
-        if (toastOption)
-          AppToaster.show({
-            message: "Press " + confirmKey + " to activate the color choice.",
-            intent: Intent.WARNING,
-            timeout: 2000,
-          });
-      }
-      return;
-    } else if ((e.ctrlKey || e.metaKey) && e.key == "b") {
-      if (keepColor && lastColorT != "") {
-        colorApplied = true;
-        setTimeout(function () {
-          currentPos.setPos();
-          addColor(lastColorT, "t");
-        }, 120);
-      }
-      tFlag = true;
-      lastPos.setPos(2);
-      if (!alwaysConfirm && lastPos.hasSelection()) {
-        needConfirmKey = false;
-        if (toastOption) colorToast();
-      } else {
-        needConfirmKey = true;
-        if (toastOption)
-          lastToaster = AppToaster.show({
-            message: "Press " + confirmKey + " to activate the color choice.",
-            intent: Intent.WARNING,
-            timeout: 2000,
-          });
-      }
-      return;
-    }
+  if (!flag["h"] && !flag["b"] && !flag["i"]) {
+    if (isPressed(e, "h")) return;
+    else if (isPressed(e, "b")) return;
+    else if (isPressed(e, "i")) return;
     if (e.altKey && e.key == "h") {
       removeHighlightsFromBlock(null, removeOption);
       setCursorPosition(document.activeElement);
     }
   }
 
-  if (hFlag) {
-    if (colorApplied && currentPos.isEgal(lastPos) && e.key == "Backspace") {
-      hFlag = false;
-      window.roamAlphaAPI.data.undo();
-      if (toastOption) AppToaster.clear();
-      lastColorH = "";
-      e.preventDefault();
-      colorApplied = false;
-      return;
+  if (flag["h"] && isModifierKeyPressed(e, "h")) return;
+  else if (flag["b"] && isModifierKeyPressed(e, "b")) return;
+  else if (flag["i"] && isModifierKeyPressed(e, "i")) return;
+}
+
+function isPressed(e, key) {
+  if ((e.ctrlKey || e.metaKey) && e.key == key) {
+    if (keepColor && lastColor[key] != "") {
+      colorApplied = true;
+      setTimeout(function () {
+        currentPos.setPos();
+        addColor(lastColor[key], key);
+      }, 120);
     }
-    if (!e.shiftKey && !(e.key === confirmKey)) hFlag = false;
-    if (!needConfirmKey) {
-      currentPos.setPos();
-      if (currentPos.isEgal(lastPos)) {
-        let color;
-        if (e.key === "Home") {
-          color = lastColorH;
-          e.preventDefault();
-        } else color = checkColorKeys(e.key);
-        if (color != "") {
-          hFlag = false;
-          if (keepColor && lastColorH != "") {
-            window.roamAlphaAPI.data.undo();
-            lastColorH = color;
-          }
-          setTimeout(function () {
-            currentPos.setPos();
-            addColor(color, "h");
-          }, 40);
-          e.preventDefault();
-        }
-      }
-      if (toastOption) AppToaster.clear();
+    flag[key] = true;
+    lastPos.setPos(2);
+    if (!alwaysConfirm && lastPos.hasSelection()) {
+      needConfirmKey = false;
+      if (toastOption) colorToast();
     } else {
-      if (e.key === confirmKey) {
-        if (toastOption) AppToaster.clear();
-        needConfirmKey = false;
-        if (toastOption) colorToast();
+      needConfirmKey = true;
+      if (toastOption)
+        AppToaster.show({
+          message: "Press " + confirmKey + " to activate the color choice.",
+          intent: Intent.WARNING,
+          timeout: 2000,
+        });
+    }
+    return true;
+  }
+  return false;
+}
+
+function isModifierKeyPressed(e, key) {
+  if (colorApplied && currentPos.isEgal(lastPos) && e.key == "Backspace") {
+    flag[key] = false;
+    window.roamAlphaAPI.data.undo();
+    if (toastOption) AppToaster.clear();
+    lastColor[key] = "";
+    e.preventDefault();
+    colorApplied = false;
+    return true;
+  }
+  if (!e.shiftKey && !(e.key === confirmKey)) flag[key] = false;
+  if (!needConfirmKey) {
+    currentPos.setPos();
+    if (currentPos.isEgal(lastPos)) {
+      let color;
+      if (e.key === "Home") {
+        color = lastColor[key];
+        e.preventDefault();
+      } else color = checkColorKeys(e.key);
+      if (color != "") {
+        flag[key] = false;
+        if (keepColor && lastColor[key] != "") {
+          window.roamAlphaAPI.data.undo();
+          lastColor[key] = color;
+        }
+        setTimeout(function () {
+          currentPos.setPos();
+          addColor(color, key);
+        }, 40);
         e.preventDefault();
       }
     }
-  } else if (tFlag) {
-    if (colorApplied && currentPos.isEgal(lastPos) && e.key == "Backspace") {
-      tFlag = false;
-      window.roamAlphaAPI.data.undo();
+    if (toastOption) AppToaster.clear();
+  } else {
+    if (e.key === confirmKey) {
       if (toastOption) AppToaster.clear();
-      lastColorT = "";
-      e.preventDefault();
-      colorApplied = false;
-      return;
-    }
-    if (!e.shiftKey && !(e.key === confirmKey)) tFlag = false;
-    if (!needConfirmKey) {
-      currentPos.setPos();
-      if (currentPos.isEgal(lastPos)) {
-        let color;
-        if (e.key === "Home") {
-          color = lastColorT;
-          e.preventDefault();
-        } else color = checkColorKeys(e.key);
-        if (color != "") {
-          tFlag = false;
-          if (keepColor && lastColorT != "") {
-            window.roamAlphaAPI.data.undo();
-            lastColorT = color;
-          }
-          setTimeout(function () {
-            currentPos.setPos();
-            addColor(color, "t");
-          }, 40);
-          e.preventDefault();
-        }
-      }
-      if (toastOption) AppToaster.clear();
-    } else {
-      if (e.key === confirmKey) {
-        if (toastOption) AppToaster.clear();
-        needConfirmKey = false;
-        if (toastOption) colorToast();
-        e.preventDefault();
-      }
-    }
-    if (colorApplied && e.key == "Backspace") {
-      tFlag = false;
-      window.roamAlphaAPI.data.undo();
-      lastColorT = "";
+      needConfirmKey = false;
+      if (toastOption) colorToast();
       e.preventDefault();
     }
   }
+  if (colorApplied && e.key == "Backspace") {
+    flag[key] = false;
+    window.roamAlphaAPI.data.undo();
+    lastColor[key] = "";
+    e.preventDefault();
+  }
+  return false;
 }
 
 function colorToast(withHome = true, withBackspace = false) {
@@ -246,7 +203,7 @@ function colorToast(withHome = true, withBackspace = false) {
       homeTxt +
       backspaceTxt +
       ".",
-    intent: Intent.PRIMARY,
+    intent: Intent.WARNING,
   });
 }
 
@@ -258,8 +215,9 @@ function checkColorKeys(key) {
 }
 
 function addColor(color, flag) {
-  if (flag == "h") lastColorH = color;
-  if (flag == "t") lastColorT = color;
+  if (flag == "h") lastColor["h"] = color;
+  if (flag == "b") lastColor["b"] = color;
+  if (flag == "i") lastColor["i"] = color;
   let tagLength = color.length + 1;
   let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
   let content = getBlockContent(uid);
@@ -507,10 +465,39 @@ const panelConfig = {
   ],
 };
 
+// function whiteText() {
+//   let styleSheet = document.styleSheets[82];
+//   console.log(styleSheet);
+
+//   for (let i = 0; i < styleSheet.cssRules.length; i++) {
+//     console.log(styleSheet.cssRules[i].selectorText);
+//     if (
+//       styleSheet.cssRules[i].selectorText ===
+//       '[data-tag="c:BLUE"] + .rm-highlight'
+//     ) {
+//       styleSheet.cssRules[i].style.color = "black !important";
+//     }
+//   }
+// }
+
 export default {
   onload: ({ extensionAPI }) => {
     extensionAPI.settings.panel.create(panelConfig);
-    window.roamAlphaAPI.ui.commandPalette.addCommand({
+    //setToBlackText();
+
+    // extensionAPI.ui.commandPalette.addCommand({
+    //   label: "Color Highlighter: background color",
+    //   callback: () => {
+    //     let block = window.roamAlphaAPI.ui.getFocusedBlock();
+    //     let menu = document.querySelector(".bp3-menu.bp3-text-small");
+    //     let separator = document.createElement("li");
+    //     separator.classList.add("bp3-menu-divider");
+    //     menu.appendChild(separator);
+    //    // TODO
+    //   },
+    // });
+
+    extensionAPI.ui.commandPalette.addCommand({
       label: "Color Highlighter: Remove color tags from current BLOCK",
       callback: () => {
         let block = window.roamAlphaAPI.ui.getFocusedBlock();
@@ -520,7 +507,7 @@ export default {
         }, 250);
       },
     });
-    window.roamAlphaAPI.ui.commandPalette.addCommand({
+    extensionAPI.ui.commandPalette.addCommand({
       label: "Color Highlighter: Remove color tags from current PAGE zoom view",
       callback: async () => {
         let uid =
@@ -531,7 +518,7 @@ export default {
         recursiveCleaning(tree.children);
       },
     });
-    window.roamAlphaAPI.ui.commandPalette.addCommand({
+    extensionAPI.ui.commandPalette.addCommand({
       label:
         "Color Highlighter: Set color of highlights in current block (+letter or Backspace)",
       callback: () => {
@@ -539,12 +526,20 @@ export default {
         setColorCallback(uid, "^^");
       },
     });
-    window.roamAlphaAPI.ui.commandPalette.addCommand({
+    extensionAPI.ui.commandPalette.addCommand({
       label:
         "Color Highlighter: Set color of bolded texts in current block (+letter or Backspace)",
       callback: () => {
         let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
         setColorCallback(uid, "**");
+      },
+    });
+    extensionAPI.ui.commandPalette.addCommand({
+      label:
+        "Color Highlighter: Set color of underlined texts in current block (+letter or Backspace)",
+      callback: () => {
+        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+        setColorCallback(uid, "__");
       },
     });
     roamAlphaAPI.ui.blockContextMenu.addCommand({
@@ -595,8 +590,9 @@ export default {
     } else alwaysConfirm = extensionAPI.settings.get("confirmOption");
 
     window.addEventListener("keydown", keyHighlight);
-    hFlag = false;
-    tFlag = false;
+    flag["h"] = false;
+    flag["b"] = false;
+    flag["i"] = false;
 
     /* Smartblock command
             const arg = {
@@ -619,20 +615,6 @@ export default {
     console.log("Color Highlighter loaded.");
   },
   onunload: () => {
-    window.roamAlphaAPI.ui.commandPalette.removeCommand({
-      label: "Color Highlighter: Remove color tags from current BLOCK",
-    });
-    window.roamAlphaAPI.ui.commandPalette.removeCommand({
-      label: "Color Highlighter: Remove color tags from current PAGE zoom view",
-    });
-    window.roamAlphaAPI.ui.commandPalette.removeCommand({
-      label:
-        "Color Highlighter: Set color of highlights in current block (+letter or Backspace)",
-    });
-    window.roamAlphaAPI.ui.commandPalette.removeCommand({
-      label:
-        "Color Highlighter: Set color of bolded texts in current block (+letter or Backspace)",
-    });
     roamAlphaAPI.ui.blockContextMenu.removeCommand({
       label: "Color Highlighter: Remove color tags",
     });
