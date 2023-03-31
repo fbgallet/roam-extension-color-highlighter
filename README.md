@@ -1,12 +1,12 @@
 # Color Highlighter
 
-### Highlight text or write text with different colors. Keyboard only.
+### Highlight text, write text or underline with different colors. Keyboard only.
 
-![image](https://user-images.githubusercontent.com/74436347/182989132-886f244e-a37b-40fa-8010-04bdee184e16.png)
+![image](https://user-images.githubusercontent.com/74436347/229198298-c7cc6dfc-fd76-4187-a423-119fdc3a8227.png)
 
 ## Instructions
 
-Select some part of your text inside a block, add Highight or bold with native Roam hotkeys (`Ctrl or Cmd + h` for highlight, `Ctrl or Cmd + b` for bold), then **press a letter corresponding to the first letter of the color (**without pressing Ctrl-Cmd anymore**)**, e.g. 'g' for green. If you press `Shift` when pressing the color first letter, the color will be more vivid and the text color in the highlight will be white instead of black.
+Select some part of your text inside a block, add Highight or bold or set to italic with native Roam hotkeys (`Ctrl or Cmd + h` for highlight, `Ctrl or Cmd + b` for bold, `Ctrl or Cmd + i` for underline), then **press a letter corresponding to the first letter of the color (**without pressing Ctrl-Cmd anymore**)**, e.g. 'g' for green. If you press `Shift` when pressing the color first letter, the color will be more vivid and the text color in the highlight will be white instead of black.
 
 The extension will insert a tag like `#c:green` (or #c:GREEN) before highlight or bold markdown syntax, the result will be e.g.: `#c:green **my green text**`. Of course, these tags are only visible when you edit the block. _Credit to @CatoMinor3 for the great CSS trick allowing to customize highlighted and bold texts in Roam!_
 
@@ -64,14 +64,13 @@ These commands can help to export more easily you data, since colors tags are re
 - `Set color of bold texts in current block` (__Command palette & context menu__) : same behavior as the precedent.
 
 ## Change log
-  Version 2 is way more reliable (no more unintented color tags) and has some new features:
   [See versions changelog here](https://github.com/fbgallet/roam-extension-color-highlighter/edit/main/CHANGELOG.md)
 
 ## Future developments
 
 - This extension is currently keyboard only, I could add some visual UI.
 - Color whole block and/or its children.
-- Colored underlining, colored borders.
+- Colored borders.
 - Better colors customization.
 
 ---
