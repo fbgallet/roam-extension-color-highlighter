@@ -1,7 +1,9 @@
 ### v.4 (March 31th, 2023)
- New feature: underline colors with native italic command, Ctrl-Cmd + i
+New features:
+ - Underline colors with native italic command, Ctrl-Cmd + i
+ - change background color of block or block+children
  
- Fix: colors work now better with Roam Studio themes
+ Fix: colors work now better with Roam Studio themes (but not light background colors)
 
 ### v.3 (August 26th, 2022)
  Fix: colored text (with bold command) was broken, it works now properly!
