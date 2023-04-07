@@ -1,7 +1,16 @@
 import { Intent, Position, Toaster } from "@blueprintjs/core";
 
+const colorTagsRegex = /#c:[a-zA-Z]* |#c:[a-zA-Z]* |#c:[a-zA-Z]* /g;
+const colorTagsWithMarkupRegex =
+  /#c:[a-zA-Z]* \*\*([^\*]*)\*\*|#c:[a-zA-Z]* \^\^([^\^]*)\^\^|#c:[a-zA-Z]* \_\_([^\_]*)\_\_/g;
+const bgColorRegex = /\#\.bg-(ch-)?[a-zA-Z]*/g;
+
 let flag = { h: false, b: false, i: false };
 let needConfirmKey = false;
+const argListener = {
+  capture: true,
+  once: true,
+};
 const colorTagsDefault = [
   "#c:blue",
   "#c:BLUE",
@@ -264,20 +273,30 @@ function removeHighlightsFromBlock(uid = null, removeMarkups = false) {
 function removeFromContent(
   content,
   removeMarkups = false,
-  onlyForThisMarkup = ""
+  onlyForThisMarkup = null
 ) {
-  for (let i = 0; i < colorTags.length; i++) {
-    content = content.replaceAll(
-      colorTags[i] + " " + onlyForThisMarkup,
-      "" + onlyForThisMarkup
-    );
-  }
+  let matches = [];
+  let tagMatches;
+  if (!onlyForThisMarkup) matches = content.match(bgColorRegex);
   if (removeMarkups) {
-    content = content.replaceAll("^^", "");
-    content = content.replaceAll("**", "");
-    content = content.replaceAll("__", "");
+    tagMatches = [...content.matchAll(colorTagsWithMarkupRegex)];
+    if (tagMatches)
+      tagMatches.forEach(
+        (tag) =>
+          (content = content.replaceAll(
+            tag[0],
+            tag[1] ? tag[1] : tag[2] ? tag[2] : tag[3] ? tag[3] : null
+          ))
+      );
+  } else {
+    tagMatches = content
+      .match(colorTagsRegex)
+      .filter((tag) => (onlyForThisMarkup ? tag === onlyForThisMarkup : tag));
+    matches = matches.concat(tagMatches);
   }
-  return content;
+  if (matches)
+    matches.forEach((tag) => (content = content.replaceAll(tag, "")));
+  return content.trim();
 }
 
 function recursiveCleaning(branch) {
@@ -298,37 +317,54 @@ function recursiveCleaning(branch) {
 
 function setColorInBlock(e, uid, markup) {
   AppToaster.clear();
-  let color = checkColorKeys(e.key);
-  if (e.key == "Backspace") {
-    color = "remove";
-    e.preventDefault();
-  }
-  if (color != "") {
-    if (color == "remove") color = "";
-    let content = getBlockContent(uid);
-    let newContent = removeFromContent(content, false, markup);
-    let splitContent = newContent.split(markup);
-    for (let i = 0; i < splitContent.length; i += 2) {
-      if (i != splitContent.length - 1)
-        splitContent[i] = splitContent[i] + color + " ";
+  if (colorKeysDefault.includes(e.key) || e.key == "Backspace") {
+    let color = checkColorKeys(e.key);
+    if (e.key == "Backspace") {
+      color = "remove";
+      e.preventDefault();
     }
-    newContent = splitContent.join(markup);
-    setTimeout(function () {
-      window.roamAlphaAPI.updateBlock({
-        block: { uid: uid, string: newContent },
-      });
-    }, 50);
-    e.preventDefault();
+    if (color != "") {
+      if (color == "remove") color = "";
+      let content = getBlockContent(uid);
+      let newContent;
+      if (markup.includes("#")) {
+        let match = content.match(bgColorRegex);
+        let colorTag = color != "" ? markup + color.slice(3) : "";
+        match
+          ? (newContent = content.replace(match[0], colorTag))
+          : (newContent = content + " " + colorTag);
+        newContent = newContent.trim();
+      } else {
+        newContent = removeFromContent(content, false, markup);
+        let splitContent = newContent.split(markup);
+        for (let i = 0; i < splitContent.length; i += 2) {
+          if (i != splitContent.length - 1)
+            splitContent[i] = splitContent[i] + color + " ";
+        }
+        newContent = splitContent.join(markup);
+      }
+      setTimeout(function () {
+        window.roamAlphaAPI.updateBlock({
+          block: { uid: uid, string: newContent },
+        });
+      }, 50);
+      e.preventDefault();
+    }
+  }
+  if (e.shiftKey && e.key === "Shift") {
+    document.addEventListener(
+      "keydown",
+      function (e) {
+        setColorInBlock(e, uid, markup);
+      },
+      argListener
+    );
   }
 }
 
 function setColorCallback(uid, markup) {
   colorToast(false, true);
-  const argListener = {
-    capture: true,
-    once: true,
-  };
-  addEventListener(
+  document.addEventListener(
     "keydown",
     function (e) {
       setColorInBlock(e, uid, markup);
@@ -440,7 +476,7 @@ const panelConfig = {
     },
     {
       id: "remove-option",
-      name: "Remove Mardown format charactere when removing color tags",
+      name: "Remove Mardown format characters when removing color tags",
       description:
         "If enable, remove ^^,**,__ when removing tags from block or page view (command palette)",
       action: {
@@ -542,6 +578,21 @@ export default {
         setColorCallback(uid, "__");
       },
     });
+    extensionAPI.ui.commandPalette.addCommand({
+      label: "Color Highlighter: Set background color, this block only",
+      callback: (e) => {
+        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+        setColorCallback(uid, "#.bg-");
+      },
+    });
+    extensionAPI.ui.commandPalette.addCommand({
+      label: "Color Highlighter: Set background color, with children",
+      callback: (e) => {
+        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+        setColorCallback(uid, "#.bg-ch-");
+      },
+    });
+
     roamAlphaAPI.ui.blockContextMenu.addCommand({
       label: "Color Highlighter: Remove color tags",
       "display-conditional": (e) => e["block-string"].includes("#c:"),
@@ -558,6 +609,20 @@ export default {
         "Color Highlighter: Set color of bold texts (& press a letter or Backspace)",
       "display-conditional": (e) => e["block-string"].includes("**"),
       callback: (e) => setColorCallback(e["block-uid"], "**"),
+    });
+    roamAlphaAPI.ui.blockContextMenu.addCommand({
+      label:
+        "Color Highlighter: Set color of underliend texts (& press a letter or Backspace)",
+      "display-conditional": (e) => e["block-string"].includes("__"),
+      callback: (e) => setColorCallback(e["block-uid"], "__"),
+    });
+    roamAlphaAPI.ui.blockContextMenu.addCommand({
+      label: "Color Highlighter: Set background color, this block only",
+      callback: (e) => setColorCallback(e["block-uid"], "#.bg-"),
+    });
+    roamAlphaAPI.ui.blockContextMenu.addCommand({
+      label: "Color Highlighter: Set background color, with children",
+      callback: (e) => setColorCallback(e["block-uid"], "#.bg-ch-"),
     });
     //    if (extensionAPI.settings.get("color-tags") == null)
     colorTags = colorTagsDefault;
@@ -626,7 +691,16 @@ export default {
       label:
         "Color Highlighter: Set color of bold texts (& press a letter or Backspace)",
     });
-
+    roamAlphaAPI.ui.blockContextMenu.removeCommand({
+      label:
+        "Color Highlighter: Set color of underliend texts (& press a letter or Backspace)",
+    });
+    roamAlphaAPI.ui.blockContextMenu.removeCommand({
+      label: "Color Highlighter: Set background color, this block only",
+    });
+    roamAlphaAPI.ui.blockContextMenu.removeCommand({
+      label: "Color Highlighter: Set background color, with children",
+    });
     window.removeEventListener("keydown", keyHighlight);
     console.log("Color Highlighter unloaded.");
   },
