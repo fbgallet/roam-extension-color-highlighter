@@ -275,9 +275,13 @@ function removeFromContent(
   removeMarkups = false,
   onlyForThisMarkup = null
 ) {
-  let matches = [];
+  let bgMatches = [];
   let tagMatches;
-  if (!onlyForThisMarkup) matches = content.match(bgColorRegex);
+  if (!onlyForThisMarkup) {
+    bgMatches = content.match(bgColorRegex);
+    if (bgMatches)
+      bgMatches.forEach((match) => (content = content.replaceAll(match, "")));
+  }
   if (removeMarkups) {
     tagMatches = [...content.matchAll(colorTagsWithMarkupRegex)];
     if (tagMatches)
@@ -289,13 +293,23 @@ function removeFromContent(
           ))
       );
   } else {
-    tagMatches = content
-      .match(colorTagsRegex)
-      .filter((tag) => (onlyForThisMarkup ? tag === onlyForThisMarkup : tag));
-    matches = matches.concat(tagMatches);
+    tagMatches = [...content.matchAll(colorTagsRegex)].filter((tag) => {
+      return onlyForThisMarkup
+        ? content.slice(
+            tag.index + tag[0].length,
+            tag.index + tag[0].length + 2
+          ) === onlyForThisMarkup
+        : tag;
+    });
+    let shift = 0;
+    if (tagMatches)
+      tagMatches.forEach((tag) => {
+        content =
+          content.slice(0, tag.index - shift) +
+          content.slice(tag.index + tag[0].length - shift);
+        shift += tag[0].length;
+      });
   }
-  if (matches)
-    matches.forEach((tag) => (content = content.replaceAll(tag, "")));
   return content.trim();
 }
 
@@ -324,7 +338,7 @@ function setColorInBlock(e, uid, markup) {
       e.preventDefault();
     }
     if (color != "") {
-      if (color == "remove") color = "";
+      if (color === "remove") color = "";
       let content = getBlockContent(uid);
       let newContent;
       if (markup.includes("#")) {
