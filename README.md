@@ -23,9 +23,9 @@ Place the cursor in a block and run `Set background color, this block only` or `
 
 ⚠️ Light background colors (color name in lower case) are currently not very readable for Roam Studio dark themes, prefer dark colors (in upper case)
 
-Current default set of colors (_initial letter ⇒ tag_)
+### Current default set of colors (_initial letter ⇒ tag_)
 
-- b ⇒ #c:blue
+- b ⇒ #c:blue (or #.bg-blue or #.bg-ch-blue for background color)
 - B ⇒ #c:BLUE
 - f ⇒ #c:fuchsia
 - F ⇒ #c:FUCHSIA
@@ -41,7 +41,8 @@ Current default set of colors (_initial letter ⇒ tag_)
 - y ⇒ #c:yellow
 - w ⇒ #c:black
 
-All these colors are customizable. In a css block on the roam/css page, you can specify for example:
+### Color customization with CSS
+In a css block on the roam/css page, you can specify for example:
 ```
 /* Set red highlight example */
 [data-tag="c:red"] + .rm-highlight {
@@ -50,6 +51,11 @@ All these colors are customizable. In a css block on the roam/css page, you can 
 /* Set blue text example */
 [data-tag="c:blue"] + .rm-bold {
   color: #84C9FF !important;
+}
+/* Set blue background color */
+.blue > .rm-block__self,
+.blue {
+background-color: #0074d9;
 }
 /* you can also use variables eventually defined in the :root of your theme */
 [data-tag="c:red"] + .rm-highlight {
