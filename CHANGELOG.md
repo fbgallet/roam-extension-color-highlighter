@@ -1,8 +1,11 @@
 ### v.5 (October 31th, 2023)
 New features:
 - Card Grid with `#.card-grid` and `#.card-grid-color` tags
+- all colors are defined in a CSS variable, customizable in CSS: `--cl-lh-color` for light colors, `--cl-dk-color` for dark colors
 
-Fixed: entire compatibility with the dark themes of Roam Studio extension
+Fixed:
+- entire compatibility with the dark themes of Roam Studio extension
+- colors are now more consistent between highlight/text/underline/block background
 
 ### v.4 (March 31th, 2023)
 New features:
