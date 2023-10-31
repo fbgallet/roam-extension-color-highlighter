@@ -299,11 +299,17 @@
 .bg-ch-BLUE .roam-block,
 .bg-ch-BLUE textarea.rm-block-input,
 .bg-ch-FUCHSIA .roam-block,
+.bg-ch-FUCHSIA textarea.rm-block-input,
 .bg-ch-GREEN .roam-block,
+.bg-ch-GREEN textarea.rm-block-input,
 .bg-ch-ORANGE .roam-block,
+.bg-ch-ORANGE textarea.rm-block-input,
 .bg-ch-SILVER .roam-block,
+.bg-ch-SILVER textarea.rm-block-input,
 .bg-ch-RED .roam-block,
+.bg-ch-RED textarea.rm-block-input,
 .bg-ch-TEAL .roam-block,
+.bg-ch-TEAL textarea.rm-block-input,
 .roam-block .rm-block-ref.bg-black,
 .roam-block .rm-block-ref.bg-BLUE,
 .roam-block .rm-block-ref.bg-FUSCHIA,
@@ -427,6 +433,9 @@
   background-color: var(--cl-dk-yellow) !important;
 }
 
+.bg-black {
+  --tw-bg-opacity: none !important;
+}
 .bg-black > .rm-block__self,
 .bg-black
   > .rm-block__self
@@ -440,9 +449,19 @@
 }
 .roam-block-container[data-page-links*=".bg-"]:not(
     [data-page-links*=".bg-black"]
-  ):not([data-page-links*=".bg-BLUE"]):not(
+  ):not([data-page-links*=".bg-BLUE"]):not([data-page-links*=".bg-ORANGE"]):not(
+    [data-page-links*=".bg-FUCHSIA"]
+  ):not([data-page-links*=".bg-GREEN"]):not([data-page-links*=".bg-TEAL"]):not(
+    [data-page-links*=".bg-SILVER"]
+  ):not([data-page-links*=".bg-RED"]):not(
     [data-page-links*=".bg-ch-black"]
-  ):not([data-page-links*=".bg-ch-BLUE"])
+  ):not([data-page-links*=".bg-ch-BLUE"]):not(
+    [data-page-links*=".bg-ch-ORANGE"]
+  ):not([data-page-links*=".bg-ch-FUCHSIA"]):not(
+    [data-page-links*=".bg-ch-GREEN"]
+  ):not([data-page-links*=".bg-ch-TEAL"]):not(
+    [data-page-links*=".bg-ch-SILVER"]
+  ):not([data-page-links*=".bg-ch-RED"])
   > div
   > div
   > textarea.rm-block-input {
@@ -452,30 +471,45 @@
 /***************/
 /*    CARDS    */
 /***************/
-.roam-block-container[data-page-links*=".bg-cards"] .rm-block-children {
+.rm-block-separator {
+  display: none;
+}
+.roam-block-container[data-page-links*=".card-grid"] .rm-block-children {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
   align-items: start;
-  padding-right: 5px;
+  /* padding-right: 10px; */
 }
-.roam-block-container[data-page-links*=".bg-cards"] > .rm-block-children {
-  margin-left: 20px;
+.roam-block-container[data-page-links*=".card-grid"]
+  > div
+  > .roam-block-container {
+  padding-right: 25px;
 }
-.roam-block-container[data-page-links*=".bg-cards"]
+.roam-block-container[data-page-links*=".card-grid"]
+  > div
+  > div
+  > *
+  .rm-block__input {
+  margin-right: -25px;
+}
+.roam-block-container[data-page-links*=".card-grid"] > .rm-block-children {
+  margin-left: 15px;
+}
+.roam-block-container[data-page-links*=".card-grid"]
   .rm-block-children
   > *
   .rm-block-children {
-  margin-left: 15px !important;
+  margin-left: 10px !important;
 }
 
-.roam-block-container[data-page-links*=".bg-cards"]
+.roam-block-container[data-page-links*=".card-grid"]
   .rm-block-children
   > *
   .rm-block-children
   .rm-multibar {
   margin-left: 10px !important;
 }
-.roam-block-container[data-page-links*=".bg-cards"]
+.roam-block-container[data-page-links*=".card-grid"]
   > div
   > .roam-block-container {
   margin: 5px 5px;
@@ -483,121 +517,122 @@
   padding-bottom: 5px;
   border-radius: 0 0 10px 10px;
 }
-[data-page-links*=".bg-cards"]
+[data-page-links*=".card-grid"]
   > div
   > div:has(.rm-block-children).rm-block--closed {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
 }
-[data-page-links*=".bg-cards"] > div > div > div > .roam-block {
+[data-page-links*=".card-grid"] > div > div > div > .roam-block {
   font-weight: 700;
 }
-[data-page-links*=".bg-cards"] > div > div > div > .roam-block .rm-bold {
+[data-page-links*=".card-grid"] > div > div > div > .roam-block .rm-bold {
   font-weight: 900;
 }
-[data-page-links*=".bg-cards"] > div > div > .rm-block-main {
-  border-top: 3px solid grey;
+/* [data-page-links*=".card-grid"] > div > div > .rm-block-main {
+  
+  padding-top: 5px;
   margin-top: -5px;
-}
-.bg-cards > .rm-block-children > .roam-block-container {
+} */
+.card-grid > .rm-block-children > .roam-block-container {
   border: 1px solid rgba(128, 128, 128, 0.2);
 }
 
 /* cards colors */
-.bg-cards-blue > div > div > .rm-block-main {
+.card-grid > div > .roam-block-container {
+  border-top: 3px solid var(--cl-dk-silver) !important;
+}
+/* .card-grid-blue > div > div > .rm-block-main */
+.card-grid-blue > div > .roam-block-container {
   border-top: 3px solid var(--cl-dk-blue);
 }
-.bg-cards-blue .roam-block-container {
+.card-grid-blue .roam-block-container {
   background-color: var(--cl-lh-blue);
 }
-.bg-cards-blue > div > div > div > .roam-block {
+.card-grid-blue > div > div > div > .roam-block {
   color: var(--cl-dk-blue);
 }
-.bg-cards-fuchsia > div > div > .rm-block-main {
+.card-grid-fuchsia > div > .roam-block-container {
   border-top: 3px solid var(--cl-dk-fuchsia);
 }
-.bg-cards-fuchsia .roam-block-container {
+.card-grid-fuchsia .roam-block-container {
   background-color: var(--cl-lh-fuchsia);
 }
-.bg-cards-fuchsia > div > div > div > .roam-block {
+.card-grid-fuchsia > div > div > div > .roam-block {
   color: var(--cl-dk-fuchsia);
 }
-.bg-cards-green > div > div > .rm-block-main {
+.card-grid-green > div > .roam-block-container {
   border-top: 3px solid var(--cl-dk-green);
 }
-.bg-cards-green .roam-block-container {
+.card-grid-green .roam-block-container {
   background-color: var(--cl-lh-green);
 }
-.bg-cards-green > div > div > div > .roam-block {
+.card-grid-green > div > div > div > .roam-block {
   color: var(--cl-dk-green);
 }
-.bg-cards-orange > div > div > .rm-block-main {
+.card-grid-orange > div > .roam-block-container {
   border-top: 3px solid var(--cl-dk-orange);
 }
-.bg-cards-orange .roam-block-container {
+.card-grid-orange .roam-block-container {
   background-color: var(--cl-lh-orange);
 }
-.bg-cards-orange > div > div > div > .roam-block {
+.card-grid-orange > div > div > div > .roam-block {
   color: var(--cl-dk-orange);
 }
-.bg-cards-silver > div > div > .rm-block-main {
+.card-grid-silver > div > .roam-block-container {
   border-top: 3px solid var(--cl-dk-silver);
 }
-.bg-cards-silver .roam-block-container {
+.card-grid-silver .roam-block-container {
   background-color: var(--cl-lh-silver);
 }
-.bg-cards-silver > div > div > div > .roam-block {
+.card-grid-silver > div > div > div > .roam-block {
   color: var(--cl-dk-silver);
 }
-.bg-cards-red > div > div > .rm-block-main {
+.card-grid-red > div > .roam-block-container {
   border-top: 3px solid var(--cl-dk-red);
 }
-.bg-cards-red .roam-block-container {
+.card-grid-red .roam-block-container {
   background-color: var(--cl-lh-red);
 }
-.bg-cards-red > div > div > div > .roam-block {
+.card-grid-red > div > div > div > .roam-block {
   color: var(--cl-dk-red);
 }
-.bg-cards-teal > div > div > .rm-block-main {
+.card-grid-teal > div > .roam-block-container {
   border-top: 3px solid var(--cl-dk-teal);
 }
-.bg-cards-teal .roam-block-container {
+.card-grid-teal .roam-block-container {
   background-color: var(--cl-lh-teal);
 }
-.bg-cards-teal > div > div > div > .roam-block {
+.card-grid-teal > div > div > div > .roam-block {
   color: var(--cl-dk-teal);
 }
-.bg-cards-yellow > div > div > .rm-block-main {
+.card-grid-yellow > div > .roam-block-container {
   border-top: 3px solid var(--cl-dk-yellow);
 }
-.bg-cards-yellow .roam-block-container {
+.card-grid-yellow .roam-block-container {
   background-color: var(--cl-lh-yellow);
 }
-.bg-cards-yellow > div > div > div > .roam-block {
+.card-grid-yellow > div > div > div > .roam-block {
   color: black;
 }
 
-.roam-block-container.bg-cards-light > div > .roam-block-container,
-.roam-block-container.bg-cards-dark > div > .roam-block-container {
+.roam-block-container.card-grid-light > div > .roam-block-container,
+.roam-block-container.card-grid-dark > div > .roam-block-container {
   border-radius: 10px;
 }
-.bg-cards-light > div > div > .rm-block-main,
-.bg-cards-dark > div > div > .rm-block-main {
-  border-top: none;
-}
-.bg-cards-light .roam-block-container {
+.card-grid-light .roam-block-container {
   background-color: #f0f0f0;
   opacity: 0.9;
 }
-.bg-cards-light > .rm-block-children .roam-block,
-.bg-cards-light > .rm-block-children .rm-block-main textarea.rm-block-input {
-  color: black !important;
+.card-grid-light > .rm-block-children .roam-block,
+.card-grid-light > .rm-block-children .rm-block-main textarea.rm-block-input {
+  color: black;
 }
-.bg-cards-dark .roam-block-container {
+.card-grid-dark .roam-block-container {
   background-color: #333333;
   opacity: 0.9;
 }
-.bg-cards-dark > div.rm-block-children .roam-block,
-.bg-cards-dark > .rm-block-children .rm-block-main textarea.rm-block-input {
-  color: white !important;
+.card-grid-dark > .rm-block-children .roam-block,
+.card-grid-dark > .rm-block-children .rm-block-main textarea.rm-block-input {
+  color: white;
 }
