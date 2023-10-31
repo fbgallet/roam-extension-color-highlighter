@@ -1,8 +1,8 @@
 ### v.5 (October 31th, 2023)
-  New features:
+New features:
 - Card Grid with `#.card-grid` and `#.card-grid-color` tags
 
-  Fixed: entire compatibility with the dark themes of Roam Studio extension
+Fixed: entire compatibility with the dark themes of Roam Studio extension
 
 ### v.4 (March 31th, 2023)
 New features:
