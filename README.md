@@ -1,8 +1,8 @@
 # Color Highlighter
 
-### Highlight, write or underline text with different colors, or change background color of blocks. Keyboard only.
+### Highlight, write or underline text with different colors, or change background color of blocks. Keyboard only. 🆕 Colored children cards.
 
-![image](https://user-images.githubusercontent.com/74436347/230618428-7caf405d-8060-4630-a954-a0324979c223.png)
+![color highlighter screenshot](https://github.com/fbgallet/roam-extension-color-highlighter/assets/74436347/98cbe563-0e19-46bd-ab07-794fdd31fa23)
 
 ## Instructions
 
@@ -21,45 +21,33 @@ By default, you must choose a color each time, but by pressing `Home` key, you g
 ### Set background color
 Place the cursor in a block and run `Set background color, this block only` or `Set background color, with children`, depending on whether you want to apply the background color to a single block or to it and all its (curent or future) children. You can also run this commands from the block context menu > Plugins. It will add a hidden tag at the end of the block, e.g.: `#bg-red` for one block, `#bg-ch-red` for the block and its children. You can easily change the color with the same command.
 
-⚠️ Light background colors (color name in lower case) are currently not very readable for Roam Studio dark themes, prefer dark colors (in upper case)
+### Card Grid 🆕
+Transfor children blocks in a card-like grid (currently with a predefide minimum size of 300px). Just insert a tag in the parent block: `#.card-grid` for the basic display, `#.card-grid-light` or `#.card-grid-dark` to fit to your light/dark theme, or `#.card-grid-color` (e.g.: `#.card-grid-blue`) for colored cards (with the title in the same color).
 
 ### Current default set of colors (_initial letter ⇒ tag_)
 
-- b ⇒ #c:blue (or #.bg-blue or #.bg-ch-blue for background color)
-- B ⇒ #c:BLUE
-- f ⇒ #c:fuchsia
-- F ⇒ #c:FUCHSIA
-- g ⇒ #c:green
-- G ⇒ #c:GREEN
-- o ⇒ #c:orange
-- O ⇒ #c:ORANGE
-- s ⇒ #c:silver
-- S ⇒ #c:SILVER (more grey than silver)
-- r ⇒ #c:red
-- R ⇒ #c:RED
-- t ⇒ #c:teal
-- y ⇒ #c:yellow
+- b ⇒ #c:blue = `#cee9ff` (or #.bg-blue or #.bg-ch-blue for background color)
+- B ⇒ #c:BLUE = `#0254a0`
+- f ⇒ #c:fuchsia = `#ffa0ea`
+- F ⇒ #c:FUCHSIA = `#f012be`
+- g ⇒ #c:green = `#d3f8d5`
+- G ⇒ #c:GREEN = `#439946`
+- o ⇒ #c:orange = `#ffecd0`
+- O ⇒ #c:ORANGE = `#ff851b`
+- s ⇒ #c:silver = `#dddddd`
+- S ⇒ #c:SILVER = `#aaaaaa` (more grey than silver, but S letter is more convenient)
+- r ⇒ #c:red = `#fcb8b8`
+- R ⇒ #c:RED = `#e51000`
+- t ⇒ #c:teal = `#39cccc`
+- T => #c:Teal = `#008080`
+- y ⇒ #c:yellow = `#ffdc00` (it's dark yellow, light yellow is: `#fff6b9`)
 - w ⇒ #c:black
 
 ### Color customization with CSS
-In a css block on the roam/css page, you can specify for example:
+In a css block on the roam/css page, you can redefine each color in the `:root { }` with the following syntax: `--cl-lh-color = #xxxxxx` for light colors, `--cl-dk-color: #xxxxxx`. For example, to redefine blue dark color:
 ```
-/* Set red highlight example */
-[data-tag="c:red"] + .rm-highlight {
-  background-color: #FFD6D3 !important;
-}
-/* Set blue text example */
-[data-tag="c:blue"] + .rm-bold {
-  color: #84C9FF !important;
-}
-/* Set blue background color */
-.blue > .rm-block__self,
-.blue {
-background-color: #0074d9;
-}
-/* you can also use variables eventually defined in the :root of your theme */
-[data-tag="c:red"] + .rm-highlight {
-  background-color: var(--cl-red-100) !important;
+:root {
+  --cl-dk-blue: #2196F3;
 }
 ```
 
