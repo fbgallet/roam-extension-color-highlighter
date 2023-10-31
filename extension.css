@@ -537,7 +537,9 @@
 .card-grid > .rm-block-children > .roam-block-container {
   border: 1px solid rgba(128, 128, 128, 0.2);
 }
-
+[data-page-links*=".card-grid-"] .roam-block {
+  color: black;
+}
 /* cards colors */
 .card-grid > div > .roam-block-container {
   border-top: 3px solid var(--cl-dk-silver) !important;
@@ -611,9 +613,6 @@
 }
 .card-grid-yellow .roam-block-container {
   background-color: var(--cl-lh-yellow);
-}
-.card-grid-yellow > div > div > div > .roam-block {
-  color: black;
 }
 
 .roam-block-container.card-grid-light > div > .roam-block-container,
