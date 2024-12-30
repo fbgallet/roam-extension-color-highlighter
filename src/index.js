@@ -335,22 +335,22 @@ function recursiveCleaning(branch) {
 
 function setColorInBlock(e, uid, markup, isLastColorToApply = false) {
   !isLastColorToApply && AppToaster.clear();
-  let key = getKeyFromMarkup(markup);
-  if (isLastColorToApply && keepColor && !lastColor[key]) return;
+  let flag = getFlagFromMarkup(markup);
+  if (isLastColorToApply && keepColor && !lastColor[flag]) return;
   if (
-    (isLastColorToApply && keepColor && lastColor[key] != "") ||
+    (isLastColorToApply && keepColor && lastColor[flag] != "") ||
     colorKeysDefault.includes(e.key) ||
     e.key == "Backspace"
   ) {
-    let color = isLastColorToApply ? lastColor[key] : checkColorKeys(e.key);
+    let color = isLastColorToApply ? lastColor[flag] : checkColorKeys(e.key);
     if (e && e.key == "Backspace") {
       color = "remove";
       e.preventDefault();
     }
     if (color != "") {
       if (color === "remove") color = "";
-      else if (e && e.key) lastColor[key] = color;
-      console.log("lastColor[key] :>> ", lastColor[key]);
+      else if (e && e.key) lastColor[flag] = color;
+
       let content = getBlockContent(uid);
       let newContent;
       if (markup.includes("#")) {
@@ -365,7 +365,7 @@ function setColorInBlock(e, uid, markup, isLastColorToApply = false) {
         let splitContent = newContent.split(markup);
         for (let i = 0; i < splitContent.length; i += 2) {
           if (i != splitContent.length - 1)
-            splitContent[i] = splitContent[i] + color + " ";
+            splitContent[i] = splitContent[i] + color + (color ? " " : "");
         }
         newContent = splitContent.join(markup);
       }
@@ -388,7 +388,7 @@ function setColorInBlock(e, uid, markup, isLastColorToApply = false) {
   }
 }
 
-function getKeyFromMarkup(markup) {
+function getFlagFromMarkup(markup) {
   let key;
   switch (markup) {
     case "**":
