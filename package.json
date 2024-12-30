@@ -4,7 +4,8 @@
   "description": "Highlight with different color and color bold text",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx roamjs-scripts dev --depot"
   },
   "keywords": [],
   "author": "",

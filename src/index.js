@@ -55,7 +55,7 @@ const colorKeysDefault = [
 
 let colorKeys = [];
 let cursorAfter, removeOption, keepColor, toastOption;
-let lastColor = { h: "", b: "", i: "" };
+let lastColor = { h: "", b: "", i: "", bg: "" };
 let confirmKey = "Control";
 let alwaysConfirm = false;
 let colorApplied = false;
@@ -216,9 +216,13 @@ function colorToast(withHome = true, withBackspace = false) {
   });
 }
 
-function checkColorKeys(key) {
+function checkColorKeys(key, backgroundMarkup) {
   for (let i = 0; i < colorKeys.length; i++) {
-    if (key == colorKeys[i]) return colorTags[i];
+    if (key == colorKeys[i]) {
+      return backgroundMarkup
+        ? colorTags[i].replace("#c:", backgroundMarkup)
+        : colorTags[i];
+    }
   }
   return "";
 }
@@ -329,16 +333,24 @@ function recursiveCleaning(branch) {
   }
 }
 
-function setColorInBlock(e, uid, markup) {
-  AppToaster.clear();
-  if (colorKeysDefault.includes(e.key) || e.key == "Backspace") {
-    let color = checkColorKeys(e.key);
-    if (e.key == "Backspace") {
+function setColorInBlock(e, uid, markup, isLastColorToApply = false) {
+  !isLastColorToApply && AppToaster.clear();
+  let key = getKeyFromMarkup(markup);
+  if (isLastColorToApply && keepColor && !lastColor[key]) return;
+  if (
+    (isLastColorToApply && keepColor && lastColor[key] != "") ||
+    colorKeysDefault.includes(e.key) ||
+    e.key == "Backspace"
+  ) {
+    let color = isLastColorToApply ? lastColor[key] : checkColorKeys(e.key);
+    if (e && e.key == "Backspace") {
       color = "remove";
       e.preventDefault();
     }
     if (color != "") {
       if (color === "remove") color = "";
+      else if (e && e.key) lastColor[key] = color;
+      console.log("lastColor[key] :>> ", lastColor[key]);
       let content = getBlockContent(uid);
       let newContent;
       if (markup.includes("#")) {
@@ -362,10 +374,10 @@ function setColorInBlock(e, uid, markup) {
           block: { uid: uid, string: newContent },
         });
       }, 50);
-      e.preventDefault();
+      e && e.preventDefault();
     }
   }
-  if (e.shiftKey && e.key === "Shift") {
+  if (e && e.shiftKey && e.key === "Shift") {
     document.addEventListener(
       "keydown",
       function (e) {
@@ -376,8 +388,28 @@ function setColorInBlock(e, uid, markup) {
   }
 }
 
+function getKeyFromMarkup(markup) {
+  let key;
+  switch (markup) {
+    case "**":
+      key = "b";
+      break;
+    case "__":
+      key = "i";
+      break;
+    case "#.bg-":
+    case "#.bg-ch-":
+      key = "bg";
+      break;
+    default:
+      key = "h";
+  }
+  return key;
+}
+
 function setColorCallback(uid, markup) {
   colorToast(false, true);
+  keepColor && setColorInBlock(null, uid, markup, true);
   document.addEventListener(
     "keydown",
     function (e) {
