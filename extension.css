@@ -537,7 +537,7 @@
 .card-grid > .rm-block-children > .roam-block-container {
   border: 1px solid rgba(128, 128, 128, 0.2);
 }
-[data-page-links*=".card-grid-"] .roam-block {
+[data-page-links*=".card-grid-"] .rm-block-children .roam-block {
   color: black;
 }
 /* cards colors */
@@ -551,7 +551,7 @@
 .card-grid-blue .roam-block-container {
   background-color: var(--cl-lh-blue);
 }
-.card-grid-blue > div > div > div > .roam-block {
+.card-grid-blue > .rm-block-children > div > div > .roam-block {
   color: var(--cl-dk-blue);
 }
 .card-grid-fuchsia > div > .roam-block-container {
@@ -560,7 +560,7 @@
 .card-grid-fuchsia .roam-block-container {
   background-color: var(--cl-lh-fuchsia);
 }
-.card-grid-fuchsia > div > div > div > .roam-block {
+.card-grid-fuchsia > .rm-block-children > div > div > .roam-block {
   color: var(--cl-dk-fuchsia);
 }
 .card-grid-green > div > .roam-block-container {
@@ -569,7 +569,8 @@
 .card-grid-green .roam-block-container {
   background-color: var(--cl-lh-green);
 }
-.card-grid-green > div > div > div > .roam-block {
+/* .card-grid-green > div > div > div > .roam-block */
+.card-grid-green > .rm-block-children > div > div > .roam-block {
   color: var(--cl-dk-green);
 }
 .card-grid-orange > div > .roam-block-container {
@@ -578,7 +579,7 @@
 .card-grid-orange .roam-block-container {
   background-color: var(--cl-lh-orange);
 }
-.card-grid-orange > div > div > div > .roam-block {
+.card-grid-orange > .rm-block-children > div > div > .roam-block {
   color: var(--cl-dk-orange);
 }
 .card-grid-silver > div > .roam-block-container {
@@ -587,7 +588,7 @@
 .card-grid-silver .roam-block-container {
   background-color: var(--cl-lh-silver);
 }
-.card-grid-silver > div > div > div > .roam-block {
+.card-grid-silver > .rm-block-children > div > div > .roam-block {
   color: var(--cl-dk-silver);
 }
 .card-grid-red > div > .roam-block-container {
@@ -596,7 +597,7 @@
 .card-grid-red .roam-block-container {
   background-color: var(--cl-lh-red);
 }
-.card-grid-red > div > div > div > .roam-block {
+.card-grid-red > .rm-block-children > div > div > .roam-block {
   color: var(--cl-dk-red);
 }
 .card-grid-teal > div > .roam-block-container {
@@ -605,7 +606,7 @@
 .card-grid-teal .roam-block-container {
   background-color: var(--cl-lh-teal);
 }
-.card-grid-teal > div > div > div > .roam-block {
+.card-grid-teal > .rm-block-children > div > div > .roam-block {
   color: var(--cl-dk-teal);
 }
 .card-grid-yellow > div > .roam-block-container {
