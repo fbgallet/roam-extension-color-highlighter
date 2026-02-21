@@ -54,6 +54,7 @@ const colorKeysDefault = [
 ];
 
 let colorKeys = [];
+let colorLetterList = "";
 let cursorAfter, removeOption, keepColor, toastOption;
 let lastColor = { h: "", b: "", i: "", bg: "" };
 let confirmKey = "Control";
@@ -66,20 +67,20 @@ class CursorPosition {
     this.e = elt.selectionEnd;
   }
 
-  setPos = (shift = 0) => {
+  setPos(shift = 0) {
     this.elt = document.activeElement;
     this.s = this.elt.selectionStart + shift;
     this.e = this.elt.selectionEnd + shift;
-  };
-  isEgal = (pos) => {
+  }
+  isEgal(pos) {
     if (this.elt === pos.elt && this.s === pos.s && this.e === pos.e)
       return true;
     else return false;
-  };
-  hasSelection = () => {
+  }
+  hasSelection() {
     if (this.s != this.e) return true;
     else return false;
-  };
+  }
 }
 let currentPos = new CursorPosition();
 let lastPos = new CursorPosition();
@@ -102,6 +103,7 @@ function keyHighlight(e) {
       flag["h"] = false;
       flag["i"] = false;
       needConfirmKey = false;
+      colorApplied = false;
     }
   }
   if (!flag["h"] && !flag["b"] && !flag["i"]) {
@@ -198,7 +200,7 @@ function isModifierKeyPressed(e, key) {
 }
 
 function colorToast(withHome = true, withBackspace = false) {
-  let letterList = colorTags.join(", ").replaceAll("#c:", "");
+  let letterList = colorLetterList;
   let homeTxt = "",
     backspaceTxt = "";
   if (!colorApplied && withHome) homeTxt = ", or `Home` for last color";
@@ -233,6 +235,7 @@ function addColor(color, flag) {
   if (flag == "i") lastColor["i"] = color;
   let tagLength = color.length + 1;
   let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+  if (!uid) return;
   let content = getBlockContent(uid);
   content =
     content.slice(0, currentPos.s - 2) +
@@ -267,6 +270,7 @@ function setCursorPosition(length = 0) {
 function removeHighlightsFromBlock(uid = null, removeMarkups = false) {
   if (uid == null)
     uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+  if (!uid) return;
   let content = getBlockContent(uid);
   content = removeFromContent(content, removeMarkups);
   setTimeout(function () {
@@ -293,7 +297,7 @@ function removeFromContent(
         (tag) =>
           (content = content.replaceAll(
             tag[0],
-            tag[1] ? tag[1] : tag[2] ? tag[2] : tag[3] ? tag[3] : null
+            tag[1] ? tag[1] : tag[2] ? tag[2] : tag[3] ? tag[3] : ""
           ))
       );
   } else {
@@ -318,6 +322,7 @@ function removeFromContent(
 }
 
 function recursiveCleaning(branch) {
+  if (!branch) return;
   for (let i = 0; i < branch.length; i++) {
     let nodeUid = branch[i].uid;
     let nodeContent = branch[i].string;
@@ -592,12 +597,18 @@ export default {
     extensionAPI.ui.commandPalette.addCommand({
       label: "Color Highlighter: Remove color tags from current PAGE zoom view",
       callback: async () => {
-        let uid =
-          await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
-        const tree = getPageViewTreeByBlockUid(uid);
-        if (typeof tree.string != "undefined")
-          removeHighlightsFromBlock(tree.uid, removeOption);
-        recursiveCleaning(tree.children);
+        try {
+          let uid =
+            await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
+          if (!uid) return;
+          const tree = getPageViewTreeByBlockUid(uid);
+          if (!tree) return;
+          if (typeof tree.string != "undefined")
+            removeHighlightsFromBlock(tree.uid, removeOption);
+          recursiveCleaning(tree.children);
+        } catch (err) {
+          console.error("Color Highlighter: failed to clean page view", err);
+        }
       },
     });
     extensionAPI.ui.commandPalette.addCommand({
@@ -658,7 +669,7 @@ export default {
     });
     roamAlphaAPI.ui.blockContextMenu.addCommand({
       label:
-        "Color Highlighter: Set color of underliend texts (& press a letter or Backspace)",
+        "Color Highlighter: Set color of underlined texts (& press a letter or Backspace)",
       "display-conditional": (e) => e["block-string"].includes("__"),
       callback: (e) => setColorCallback(e["block-uid"], "__"),
     });
@@ -672,6 +683,7 @@ export default {
     });
     //    if (extensionAPI.settings.get("color-tags") == null)
     colorTags = colorTagsDefault;
+    colorLetterList = colorTags.join(", ").replaceAll("#c:", "");
     //    else colorTags = extensionAPI.settings.get("color-tags").replace(' ','').split(",");
     //    if (extensionAPI.settings.get("color-keys") == null)
     colorKeys = colorKeysDefault;
@@ -695,7 +707,7 @@ export default {
     } else toastOption = extensionAPI.settings.get("toast-option");
     if (extensionAPI.settings.get("confirmKeyOption") == null) {
       extensionAPI.settings.set("confirmKeyOption", confirmKey);
-    } else confirmKey = extensionAPI.settings.get("confirmKeyOption");
+    } else chooseConfirmKey(extensionAPI.settings.get("confirmKeyOption"));
     if (extensionAPI.settings.get("confirmOption") == null) {
       extensionAPI.settings.set("confirmOption", alwaysConfirm);
     } else alwaysConfirm = extensionAPI.settings.get("confirmOption");
@@ -739,7 +751,7 @@ export default {
     });
     roamAlphaAPI.ui.blockContextMenu.removeCommand({
       label:
-        "Color Highlighter: Set color of underliend texts (& press a letter or Backspace)",
+        "Color Highlighter: Set color of underlined texts (& press a letter or Backspace)",
     });
     roamAlphaAPI.ui.blockContextMenu.removeCommand({
       label: "Color Highlighter: Set background color, this block only",
