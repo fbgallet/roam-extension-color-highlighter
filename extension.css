@@ -866,8 +866,6 @@
   font-size: 12px;
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  position: relative;
-  overflow: hidden;
 }
 
 .cl-popover-header {
@@ -1057,20 +1055,23 @@
   opacity: 1;
 }
 
-/* Help dialog overlay — positioned inside the popover */
-.cl-help-overlay {
-  position: absolute;
-  inset: 0;
+.cl-help-dialog {
+  position: fixed;
+  z-index: 10001;
   background: var(--bc-app, #fff);
   border-radius: 6px;
-  z-index: 1;
-  overflow-y: auto;
-}
-
-.cl-help-dialog {
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
   padding: 8px;
+  width: 320px;
+  max-height: 80vh;
+  overflow-y: auto;
   font-size: 12px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .cl-help-header {

@@ -1,5 +1,6 @@
 import { Intent, Position, Toaster } from "@blueprintjs/core";
 import { showColorPopover, destroyPopoverPortal } from "./colorPopover";
+import { destroyHelpPortal } from "./helpDialog";
 import { filterTopLevelBlocks, getBlockContentByUid } from "./roamAPI";
 import { createCommands } from "./commands";
 
@@ -983,6 +984,7 @@ export default {
     if (toolbarEnabled) commands.unregisterToolbarCommands();
     if (keyboardEnabled) commands.unregisterKeyboardListener();
     destroyPopoverPortal();
+    destroyHelpPortal();
     console.log("Color Highlighter unloaded.");
   },
 };

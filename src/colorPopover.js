@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { colorPalette, formatTypes } from "./colorPalette";
+import { showHelpDialog } from "./helpDialog";
 
 const LS_FORMAT_KEY = "cl-last-format";
 const LS_COLOR_KEY = "cl-last-color";
@@ -84,110 +85,6 @@ function getPopoverPosition(selectedUids) {
 // row 0 = light, row 1 = dark
 // focusedFmt: index of focused format button, or null
 
-function HelpDialog({ onClose }) {
-  const sections = [
-    {
-      title: "Open the toolbar",
-      rows: [
-        ["Hotkey (configurable)", "Open toolbar on focused block"],
-        ["/color", "Slash command inside a block"],
-        ["Cmd/Ctrl+P → Color popover", "Via command palette"],
-        ["Right-click block(s)", "Block / multiselect context menu"],
-      ],
-    },
-    {
-      title: "Inside the toolbar",
-      rows: [
-        ["1–6", "Select format (Highlight, Text, Underline, Box, BG, Block box)"],
-        ["7", "Toggle +children (block formats)"],
-        ["b f g o s r t y w", "Apply light color (blue, fuchsia, green, orange, silver, red, teal, yellow, black)"],
-        ["B F G O S R T Y W", "Apply dark variant (Shift + letter)"],
-        ["Backspace", "Remove color tag"],
-        ["Enter", "Re-apply last used color"],
-        ["↑ ↓ ← →", "Navigate format / swatch grid"],
-        ["Ctrl/Cmd+click", "Combine two block formats"],
-        ["Esc", "Close toolbar"],
-      ],
-    },
-    {
-      title: "Other commands (command palette / context menu)",
-      rows: [
-        ["Remove color tags", "Strip all color tags from current block"],
-        ["Remove color tags (page)", "Strip all color tags in current page view"],
-        ["Change color of highlights", "Multiselect context menu — change existing colors"],
-      ],
-    },
-  ];
-
-  return React.createElement(
-    "div",
-    {
-      className: "cl-help-overlay",
-      onMouseDown: (e) => { e.stopPropagation(); e.preventDefault(); },
-    },
-    React.createElement(
-      "div",
-      { className: "cl-help-dialog" },
-      // Header
-      React.createElement(
-        "div",
-        { className: "cl-help-header" },
-        React.createElement("span", { className: "cl-help-title" }, "Color Highlighter — Shortcuts"),
-        React.createElement(
-          "button",
-          { className: "bp3-button bp3-minimal bp3-small", onClick: onClose, tabIndex: -1 },
-          React.createElement("span", { className: "bp3-icon bp3-icon-cross" }),
-        ),
-      ),
-      // Sections
-      ...sections.map((sec) =>
-        React.createElement(
-          "div",
-          { key: sec.title, className: "cl-help-section" },
-          React.createElement("div", { className: "cl-help-section-title" }, sec.title),
-          React.createElement(
-            "table",
-            { className: "cl-help-table" },
-            React.createElement(
-              "tbody",
-              null,
-              ...sec.rows.map(([kbd, desc], i) =>
-                React.createElement(
-                  "tr",
-                  { key: i },
-                  React.createElement("td", { className: "cl-help-kbd" },
-                    React.createElement("kbd", null, kbd)
-                  ),
-                  React.createElement("td", { className: "cl-help-desc" }, desc),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-      // Support section
-      React.createElement("div", { className: "cl-help-divider" }),
-      React.createElement(
-        "div",
-        { className: "cl-help-support" },
-        React.createElement("strong", null, "How to support my work?"),
-        React.createElement("br"),
-        "Become a ",
-        React.createElement("a", { href: "https://github.com/sponsors/fbgallet", target: "_blank", rel: "noopener noreferrer" }, "Github sponsor"),
-        ", ",
-        React.createElement("a", { href: "https://buymeacoffee.com/fbgallet", target: "_blank", rel: "noopener noreferrer" }, "buy me a coffee"),
-        " or follow @fbgallet on ",
-        React.createElement("a", { href: "https://x.com/fbgallet", target: "_blank", rel: "noopener noreferrer" }, "X"),
-        ", on ",
-        React.createElement("a", { href: "https://bsky.app/profile/fbgallet.bsky.social", target: "_blank", rel: "noopener noreferrer" }, "Bluesky"),
-        " or on ",
-        React.createElement("a", { href: "https://mastodon.social/@fbgallet", target: "_blank", rel: "noopener noreferrer" }, "Mastodon"),
-        ".",
-      ),
-    ),
-  );
-}
-
 class ColorPopover extends React.Component {
   constructor(props) {
     super(props);
@@ -216,7 +113,6 @@ class ColorPopover extends React.Component {
       lastColorKey: savedColorKey,
       focusedCell: null,
       focusedFmt: null,
-      showHelp: false,
     };
 
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -247,11 +143,7 @@ class ColorPopover extends React.Component {
     if (e.key === "Escape") {
       e.preventDefault();
       e.stopPropagation();
-      if (this.state.showHelp) {
-        this.setState({ showHelp: false });
-      } else {
-        this.close();
-      }
+      this.close();
       return;
     }
 
@@ -512,6 +404,7 @@ class ColorPopover extends React.Component {
             "bp3-button bp3-small cl-fmt-btn" +
             (isActive ? " bp3-active bp3-intent-primary" : "") +
             (focusedFmt === i ? " cl-fmt-btn-focused" : ""),
+          onMouseDown: (e) => e.preventDefault(),
           onClick: (e) => this.selectFormat(i, e.ctrlKey || e.metaKey),
           title: fmt.supportsChildren
             ? fmt.label +
@@ -589,7 +482,11 @@ class ColorPopover extends React.Component {
                       ? "1px solid #666"
                       : "1px solid rgba(0,0,0,0.15)",
             },
-            onClick: () => this.applyColor(key),
+            onMouseDown: (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              this.applyColor(key);
+            },
             title:
               c.name +
               (isLight ? "" : " dark") +
@@ -649,11 +546,6 @@ class ColorPopover extends React.Component {
           e.preventDefault();
         },
       },
-      // Help dialog (rendered inside the popover as an overlay)
-      this.state.showHelp &&
-        React.createElement(HelpDialog, {
-          onClose: () => this.setState({ showHelp: false }),
-        }),
       // Header
       React.createElement(
         "div",
@@ -670,7 +562,8 @@ class ColorPopover extends React.Component {
             "button",
             {
               className: "bp3-button bp3-minimal bp3-small cl-help-btn",
-              onClick: () => this.setState((s) => ({ showHelp: !s.showHelp })),
+              onMouseDown: (e) => e.preventDefault(),
+              onClick: () => showHelpDialog(),
               title: "Help & shortcuts",
               tabIndex: -1,
             },
@@ -680,6 +573,7 @@ class ColorPopover extends React.Component {
             "button",
             {
               className: "bp3-button bp3-minimal bp3-small",
+              onMouseDown: (e) => e.preventDefault(),
               onClick: () => this.close(),
               tabIndex: -1,
             },
@@ -705,6 +599,7 @@ class ColorPopover extends React.Component {
               className:
                 "bp3-button bp3-small bp3-minimal cl-children-toggle" +
                 (withChildren ? " bp3-active bp3-intent-primary" : ""),
+              onMouseDown: (e) => e.preventDefault(),
               onClick: () => this.toggleChildren(),
               title: withChildren
                 ? "Block + children (click to apply to block only)"
