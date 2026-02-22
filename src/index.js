@@ -1,12 +1,18 @@
 import { Intent, Position, Toaster } from "@blueprintjs/core";
+import { showColorPopover, destroyPopoverPortal } from "./colorPopover";
+import { filterTopLevelBlocks, getBlockContentByUid } from "./roamAPI";
+import { createCommands } from "./commands";
 
 const colorTagsRegex = /#c:[a-zA-Z]* |#c:[a-zA-Z]* |#c:[a-zA-Z]* /g;
 const colorTagsWithMarkupRegex =
-  /#c:[a-zA-Z]* \*\*([^\*]*)\*\*|#c:[a-zA-Z]* \^\^([^\^]*)\^\^|#c:[a-zA-Z]* \_\_([^\_]*)\_\_/g;
+  /#c:[a-zA-Z]* \*\*([^\*]*)\*\*|#c:[a-zA-Z]* \^\^([^\^]*)\^\^|#c:[a-zA-Z]* \_\_([^\_]*)\_\_|#c:[a-zA-Z]* ~~([^~]*)~~/g;
 const bgColorRegex = /\#\.bg-(ch-)?[a-zA-Z]*/g;
+const boxColorRegex = /\#\.box-(ch-)?[a-zA-Z]*/g;
+const blockColorRegex = /\#\.(bg|box)-(ch-)?[a-zA-Z]*/g;
 
-let flag = { h: false, b: false, i: false };
+let flag = { h: false, b: false, i: false, x: false };
 let needConfirmKey = false;
+let lastMultiselect = null; // snapshot of text selection before palette opens
 const argListener = {
   capture: true,
   once: true,
@@ -56,7 +62,9 @@ const colorKeysDefault = [
 let colorKeys = [];
 let colorLetterList = "";
 let cursorAfter, removeOption, keepColor, toastOption;
-let lastColor = { h: "", b: "", i: "", bg: "" };
+let toolbarEnabled = true;
+let keyboardEnabled = true;
+let lastColor = { h: "", b: "", i: "", bg: "", box: "", x: "" };
 let confirmKey = "Control";
 let alwaysConfirm = false;
 let colorApplied = false;
@@ -92,24 +100,26 @@ const AppToaster = Toaster.create({
 });
 
 function keyHighlight(e) {
-  if (flag["h"] || flag["b"] || flag["i"]) {
+  if (flag["h"] || flag["b"] || flag["i"] || flag["x"]) {
     currentPos.setPos();
     if (
       (e.ctrlKey || e.metaKey) &&
-      (e.key == "b" || e.key == "h" || e.key == "i")
+      (e.key == "b" || e.key == "h" || e.key == "i" || e.key == "y")
     ) {
       if (toastOption) AppToaster.clear();
       flag["b"] = false;
       flag["h"] = false;
       flag["i"] = false;
+      flag["x"] = false;
       needConfirmKey = false;
       colorApplied = false;
     }
   }
-  if (!flag["h"] && !flag["b"] && !flag["i"]) {
+  if (!flag["h"] && !flag["b"] && !flag["i"] && !flag["x"]) {
     if (isPressed(e, "h")) return;
     else if (isPressed(e, "b")) return;
     else if (isPressed(e, "i")) return;
+    else if (isPressedX(e)) return;
     if (e.altKey && e.key == "h") {
       removeHighlightsFromBlock(null, removeOption);
       setCursorPosition(document.activeElement);
@@ -119,6 +129,36 @@ function keyHighlight(e) {
   if (flag["h"] && isModifierKeyPressed(e, "h")) return;
   else if (flag["b"] && isModifierKeyPressed(e, "b")) return;
   else if (flag["i"] && isModifierKeyPressed(e, "i")) return;
+  else if (flag["x"] && isModifierKeyPressed(e, "x")) return;
+}
+
+// Special variant of isPressed for the inline-box (~~) shortcut: Cmd+y triggers flag["x"]
+function isPressedX(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key == "y") {
+    if (keepColor && lastColor["x"] != "") {
+      colorApplied = true;
+      setTimeout(function () {
+        currentPos.setPos();
+        addColor(lastColor["x"], "x");
+      }, 120);
+    }
+    flag["x"] = true;
+    lastPos.setPos(2);
+    if (!alwaysConfirm && lastPos.hasSelection()) {
+      needConfirmKey = false;
+      if (toastOption) colorToast();
+    } else {
+      needConfirmKey = true;
+      if (toastOption)
+        AppToaster.show({
+          message: "Press " + confirmKey + " to activate the color choice.",
+          intent: Intent.WARNING,
+          timeout: 2000,
+        });
+    }
+    return true;
+  }
+  return false;
 }
 
 function isPressed(e, key) {
@@ -233,6 +273,7 @@ function addColor(color, flag) {
   if (flag == "h") lastColor["h"] = color;
   if (flag == "b") lastColor["b"] = color;
   if (flag == "i") lastColor["i"] = color;
+  if (flag == "x") lastColor["x"] = color;
   let tagLength = color.length + 1;
   let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
   if (!uid) return;
@@ -246,6 +287,226 @@ function addColor(color, flag) {
   currentPos.setPos();
   setCursorPosition(tagLength);
   //  }
+}
+
+function getMarkupInfoFromBlocks(uids) {
+  const inlineMarkups = ["^^", "**", "__", "~~"];
+  const markupCounts = { "^^": 0, "**": 0, __: 0, "~~": 0 };
+  const colorKeysPerMarkup = {
+    "^^": new Set(),
+    "**": new Set(),
+    __: new Set(),
+    "~~": new Set(),
+  };
+
+  for (const uid of uids) {
+    const content = getBlockContent(uid);
+    for (const markup of inlineMarkups) {
+      if (!content.includes(markup)) continue;
+      markupCounts[markup]++;
+      const escaped = markup
+        .replace(/\^/g, "\\^")
+        .replace(/\*/g, "\\*")
+        .replace(/_/g, "\\_");
+      const re = new RegExp("#c:([a-zA-Z-]*) " + escaped, "g");
+      let m;
+      while ((m = re.exec(content)) !== null) {
+        const colorTag = "#c:" + m[1];
+        const idx = colorTags.indexOf(colorTag);
+        if (idx !== -1) colorKeysPerMarkup[markup].add(colorKeys[idx]);
+      }
+    }
+  }
+
+  const presentMarkups = inlineMarkups.filter((mu) => markupCounts[mu] > 0);
+  const currentColorKeys = {};
+  for (const markup of presentMarkups) {
+    currentColorKeys[markup] = [...colorKeysPerMarkup[markup]];
+  }
+
+  return {
+    presentMarkups,
+    isSingleMarkupType: presentMarkups.length === 1,
+    currentColorKeys,
+  };
+}
+
+// Used by the color popover: inserts or wraps text with color+markup at a known cursor/selection position.
+// selStart/selEnd come from the slash command args.indexes or textarea.selectionStart/End captured before
+// the command palette closed. For background markups (#.bg-), delegates to setColorInBlock as before.
+function applyColorFromPopover(
+  syntheticEvent,
+  uid,
+  markup,
+  selStart,
+  selEnd,
+  extraMarkup,
+  selectedUids,
+) {
+  const colorTag = checkColorKeys(syntheticEvent.key);
+  if (!colorTag && syntheticEvent.key !== "Backspace") return;
+
+  // Bulk mode: multiple blocks selected
+  if (selectedUids && selectedUids.length > 0) {
+    // For children markup, only apply to top-level blocks
+    const uidsToProcess =
+      markup === "#.bg-ch-" || markup === "#.box-ch-"
+        ? filterTopLevelBlocks(selectedUids)
+        : selectedUids;
+    if (markup.includes("#")) {
+      if (extraMarkup) {
+        // Both block-level markups selected: apply both in a single write per block
+        uidsToProcess.forEach((blockUid) =>
+          applyTwoBlockMarkups(syntheticEvent, blockUid, markup, extraMarkup),
+        );
+      } else {
+        uidsToProcess.forEach((blockUid) =>
+          setColorInBlock(syntheticEvent, blockUid, markup),
+        );
+      }
+    } else {
+      // Highlight/bold/underline: wrap entire block content if no existing markup,
+      // otherwise update existing markup color tags
+      const colorTag = checkColorKeys(syntheticEvent.key);
+      if (!colorTag && syntheticEvent.key !== "Backspace") return;
+      uidsToProcess.forEach((blockUid) => {
+        const content = getBlockContent(blockUid);
+        const hasMarkup = content.includes(markup);
+        if (hasMarkup) {
+          // Block already has markup pairs — update their color tags as usual
+          setColorInBlock(syntheticEvent, blockUid, markup);
+        } else if (syntheticEvent.key !== "Backspace" && colorTag) {
+          // No existing markup — wrap the whole block content
+          const newContent = colorTag + " " + markup + content + markup;
+          setTimeout(() => {
+            window.roamAlphaAPI.updateBlock({
+              block: { uid: blockUid, string: newContent },
+            });
+          }, 50);
+        }
+      });
+    }
+    return;
+  }
+
+  // Background colors: no insertion point needed, delegate to existing logic
+  if (markup.includes("#")) {
+    if (extraMarkup) {
+      applyTwoBlockMarkups(syntheticEvent, uid, markup, extraMarkup);
+    } else {
+      setColorInBlock(syntheticEvent, uid, markup);
+    }
+    return;
+  }
+
+  if (syntheticEvent.key === "Backspace") {
+    setColorInBlock(syntheticEvent, uid, markup);
+    return;
+  }
+
+  _applyColorFromPopoverWrite(uid, markup, colorTag, selStart, selEnd);
+}
+
+// Used by the "Change color of highlights" multiselect command.
+// Only updates blocks that already contain the chosen markup — never wraps new content.
+function applyColorChangeFromPopover(
+  syntheticEvent,
+  _uid,
+  markup,
+  _sel0,
+  _sel1,
+  _extraMarkup,
+  selectedUids,
+) {
+  if (!selectedUids || selectedUids.length === 0) return;
+
+  if (syntheticEvent.key === "Backspace") {
+    selectedUids.forEach((blockUid) => {
+      const content = getBlockContent(blockUid);
+      const newContent = markup.includes("#")
+        ? removeFromContent(content, false, null)
+        : removeFromContent(content, false, markup);
+      setTimeout(() => {
+        window.roamAlphaAPI.updateBlock({
+          block: { uid: blockUid, string: newContent },
+        });
+      }, 50);
+    });
+    return;
+  }
+
+  const uidsToProcess =
+    markup === "#.bg-ch-" || markup === "#.box-ch-"
+      ? filterTopLevelBlocks(selectedUids)
+      : selectedUids;
+  uidsToProcess.forEach((blockUid) => {
+    const content = getBlockContent(blockUid);
+    if (!content.includes(markup)) return;
+    setColorInBlock(syntheticEvent, blockUid, markup);
+  });
+}
+
+async function _applyColorFromPopoverWrite(
+  uid,
+  markup,
+  colorTag,
+  selStart,
+  selEnd,
+) {
+  lastColor[getFlagFromMarkup(markup)] = colorTag;
+
+  let content = getBlockContent(uid);
+  let insertPos = selStart !== null ? selStart : content.length;
+
+  const hasSelection =
+    selStart !== null && selEnd !== null && selStart !== selEnd;
+  let newContent, cursorTarget;
+
+  if (hasSelection) {
+    // Wrap the selected text: "colorTag ^^selected^^"
+    const before = content.slice(0, selStart);
+    const selected = content.slice(selStart, selEnd);
+    const after = content.slice(selEnd);
+    newContent = before + colorTag + " " + markup + selected + markup + after;
+    cursorTarget =
+      selStart +
+      colorTag.length +
+      1 +
+      markup.length +
+      selected.length +
+      markup.length;
+  } else {
+    // No selection: insert "colorTag ^^^^" with cursor placed between the markup pair
+    const pos = Math.min(insertPos, content.length);
+    newContent =
+      content.slice(0, pos) +
+      colorTag +
+      " " +
+      markup +
+      markup +
+      content.slice(pos);
+    cursorTarget = pos + colorTag.length + 1 + markup.length;
+  }
+
+  await window.roamAlphaAPI.updateBlock({
+    block: { uid: uid, string: newContent },
+  });
+
+  // Restore focus and set cursor after Roam re-renders the block
+  setTimeout(() => {
+    const focusedBlock = window.roamAlphaAPI.ui.getFocusedBlock();
+    if (!focusedBlock) {
+      window.roamAlphaAPI.ui.setBlockFocusAndSelection({
+        location: { "block-uid": uid, "window-id": "main-window" },
+        selection: { start: cursorTarget },
+      });
+    } else {
+      const input = document.activeElement;
+      if (input && input.tagName === "TEXTAREA") {
+        input.selectionStart = input.selectionEnd = cursorTarget;
+      }
+    }
+  }, 100);
 }
 
 function setCursorPosition(length = 0) {
@@ -281,12 +542,12 @@ function removeHighlightsFromBlock(uid = null, removeMarkups = false) {
 function removeFromContent(
   content,
   removeMarkups = false,
-  onlyForThisMarkup = null
+  onlyForThisMarkup = null,
 ) {
   let bgMatches = [];
   let tagMatches;
   if (!onlyForThisMarkup) {
-    bgMatches = content.match(bgColorRegex);
+    bgMatches = content.match(blockColorRegex);
     if (bgMatches)
       bgMatches.forEach((match) => (content = content.replaceAll(match, "")));
   }
@@ -297,15 +558,15 @@ function removeFromContent(
         (tag) =>
           (content = content.replaceAll(
             tag[0],
-            tag[1] ? tag[1] : tag[2] ? tag[2] : tag[3] ? tag[3] : ""
-          ))
+            tag[1] ? tag[1] : tag[2] ? tag[2] : tag[3] ? tag[3] : "",
+          )),
       );
   } else {
     tagMatches = [...content.matchAll(colorTagsRegex)].filter((tag) => {
       return onlyForThisMarkup
         ? content.slice(
             tag.index + tag[0].length,
-            tag.index + tag[0].length + 2
+            tag.index + tag[0].length + 2,
           ) === onlyForThisMarkup
         : tag;
     });
@@ -338,6 +599,45 @@ function recursiveCleaning(branch) {
   }
 }
 
+function applyTwoBlockMarkups(e, uid, markup1, markup2) {
+  const colorTag1 = checkColorKeys(e.key);
+  const isRemove = e.key === "Backspace";
+  const flag1 = getFlagFromMarkup(markup1);
+  const flag2 = getFlagFromMarkup(markup2);
+
+  let content = getBlockContent(uid);
+
+  // Apply markup1
+  const regex1 = markup1.startsWith("#.box-") ? boxColorRegex : bgColorRegex;
+  const match1 = content.match(regex1);
+  const colorTag1str =
+    !isRemove && colorTag1 ? markup1 + colorTag1.slice(3) : "";
+  content = match1
+    ? content.replace(match1[0], colorTag1str)
+    : colorTag1str
+      ? content + " " + colorTag1str
+      : content;
+  content = content.trim();
+  if (!isRemove && colorTag1) lastColor[flag1] = colorTag1;
+
+  // Apply markup2
+  const regex2 = markup2.startsWith("#.box-") ? boxColorRegex : bgColorRegex;
+  const match2 = content.match(regex2);
+  const colorTag2str =
+    !isRemove && colorTag1 ? markup2 + colorTag1.slice(3) : "";
+  content = match2
+    ? content.replace(match2[0], colorTag2str)
+    : colorTag2str
+      ? content + " " + colorTag2str
+      : content;
+  content = content.trim();
+  if (!isRemove && colorTag1) lastColor[flag2] = colorTag1;
+
+  setTimeout(function () {
+    window.roamAlphaAPI.updateBlock({ block: { uid, string: content } });
+  }, 50);
+}
+
 function setColorInBlock(e, uid, markup, isLastColorToApply = false) {
   !isLastColorToApply && AppToaster.clear();
   let flag = getFlagFromMarkup(markup);
@@ -359,7 +659,10 @@ function setColorInBlock(e, uid, markup, isLastColorToApply = false) {
       let content = getBlockContent(uid);
       let newContent;
       if (markup.includes("#")) {
-        let match = content.match(bgColorRegex);
+        const familyRegex = markup.startsWith("#.box-")
+          ? boxColorRegex
+          : bgColorRegex;
+        let match = content.match(familyRegex);
         let colorTag = color != "" ? markup + color.slice(3) : "";
         match
           ? (newContent = content.replace(match[0], colorTag))
@@ -388,7 +691,7 @@ function setColorInBlock(e, uid, markup, isLastColorToApply = false) {
       function (e) {
         setColorInBlock(e, uid, markup);
       },
-      argListener
+      argListener,
     );
   }
 }
@@ -406,6 +709,13 @@ function getFlagFromMarkup(markup) {
     case "#.bg-ch-":
       key = "bg";
       break;
+    case "#.box-":
+    case "#.box-ch-":
+      key = "box";
+      break;
+    case "~~":
+      key = "x";
+      break;
     default:
       key = "h";
   }
@@ -420,7 +730,7 @@ function setColorCallback(uid, markup) {
     function (e) {
       setColorInBlock(e, uid, markup);
     },
-    argListener
+    argListener,
   );
 }
 
@@ -458,9 +768,40 @@ function getBlockContent(uid) {
 /*==============================================================================================================================*/
 /* CONFIG & LOAD settings */
 
+let commands = null;
+let snapshotHandler = null;
+
 const panelConfig = {
   tabTitle: "Color Highlighter",
   settings: [
+    {
+      id: "toolbar-enabled",
+      name: "Enable Toolbar",
+      description:
+        "Enable the color picker popover (slash command, multiselect menu, command palette popover). Disable to hide all toolbar-related UI.",
+      action: {
+        type: "switch",
+        onChange: () => {
+          toolbarEnabled = !toolbarEnabled;
+          if (toolbarEnabled) commands.registerToolbarCommands();
+          else commands.unregisterToolbarCommands();
+        },
+      },
+    },
+    {
+      id: "keyboard-enabled",
+      name: "Enable inline keyboard shortcuts",
+      description:
+        "Enable Cmd/Ctrl+h/b/i/y keyboard shortcuts for inline color mode.",
+      action: {
+        type: "switch",
+        onChange: () => {
+          keyboardEnabled = !keyboardEnabled;
+          if (keyboardEnabled) commands.registerKeyboardListener();
+          else commands.unregisterKeyboardListener();
+        },
+      },
+    },
     /*       {id:     "color-tags",
         name:   "Color tags",
         description: "Customized list of color tags, separated with a comma",
@@ -552,135 +893,25 @@ const panelConfig = {
   ],
 };
 
-// function whiteText() {
-//   let styleSheet = document.styleSheets[82];
-//   console.log(styleSheet);
-
-//   for (let i = 0; i < styleSheet.cssRules.length; i++) {
-//     console.log(styleSheet.cssRules[i].selectorText);
-//     if (
-//       styleSheet.cssRules[i].selectorText ===
-//       '[data-tag="c:BLUE"] + .rm-highlight'
-//     ) {
-//       styleSheet.cssRules[i].style.color = "black !important";
-//     }
-//   }
-// }
-
 export default {
   onload: ({ extensionAPI }) => {
     extensionAPI.settings.panel.create(panelConfig);
-    //setToBlackText();
 
-    // extensionAPI.ui.commandPalette.addCommand({
-    //   label: "Color Highlighter: background color",
-    //   callback: () => {
-    //     let block = window.roamAlphaAPI.ui.getFocusedBlock();
-    //     let menu = document.querySelector(".bp3-menu.bp3-text-small");
-    //     let separator = document.createElement("li");
-    //     separator.classList.add("bp3-menu-divider");
-    //     menu.appendChild(separator);
-    //    // TODO
-    //   },
-    // });
-
-    extensionAPI.ui.commandPalette.addCommand({
-      label: "Color Highlighter: Remove color tags from current BLOCK",
-      callback: () => {
-        let block = window.roamAlphaAPI.ui.getFocusedBlock();
-        removeHighlightsFromBlock(block["block-uid"], removeOption);
-        setTimeout(function () {
-          window.roamAlphaAPI.ui.setBlockFocusAndSelection({ location: block });
-        }, 250);
-      },
+    commands = createCommands({
+      extensionAPI,
+      getLastMultiselect: () => lastMultiselect,
+      setLastMultiselect: (v) => { lastMultiselect = v; },
+      getRemoveOption: () => removeOption,
+      applyColorFromPopover,
+      applyColorChangeFromPopover,
+      getMarkupInfoFromBlocks,
+      removeHighlightsFromBlock,
+      getPageViewTreeByBlockUid,
+      recursiveCleaning,
+      setColorCallback,
+      keyHighlight,
     });
-    extensionAPI.ui.commandPalette.addCommand({
-      label: "Color Highlighter: Remove color tags from current PAGE zoom view",
-      callback: async () => {
-        try {
-          let uid =
-            await window.roamAlphaAPI.ui.mainWindow.getOpenPageOrBlockUid();
-          if (!uid) return;
-          const tree = getPageViewTreeByBlockUid(uid);
-          if (!tree) return;
-          if (typeof tree.string != "undefined")
-            removeHighlightsFromBlock(tree.uid, removeOption);
-          recursiveCleaning(tree.children);
-        } catch (err) {
-          console.error("Color Highlighter: failed to clean page view", err);
-        }
-      },
-    });
-    extensionAPI.ui.commandPalette.addCommand({
-      label:
-        "Color Highlighter: Set color of highlights in current block (+letter or Backspace)",
-      callback: () => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "^^");
-      },
-    });
-    extensionAPI.ui.commandPalette.addCommand({
-      label:
-        "Color Highlighter: Set color of bolded texts in current block (+letter or Backspace)",
-      callback: () => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "**");
-      },
-    });
-    extensionAPI.ui.commandPalette.addCommand({
-      label:
-        "Color Highlighter: Set color of underlined texts in current block (+letter or Backspace)",
-      callback: () => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "__");
-      },
-    });
-    extensionAPI.ui.commandPalette.addCommand({
-      label: "Color Highlighter: Set background color, this block only",
-      callback: (e) => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "#.bg-");
-      },
-    });
-    extensionAPI.ui.commandPalette.addCommand({
-      label: "Color Highlighter: Set background color, with children",
-      callback: (e) => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "#.bg-ch-");
-      },
-    });
-
-    roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label: "Color Highlighter: Remove color tags",
-      "display-conditional": (e) => e["block-string"].includes("#c:"),
-      callback: (e) => removeHighlightsFromBlock(e["block-uid"], removeOption),
-    });
-    roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label:
-        "Color Highlighter: Set color of highlights (& press a letter or Backspace)",
-      "display-conditional": (e) => e["block-string"].includes("^^"),
-      callback: (e) => setColorCallback(e["block-uid"], "^^"),
-    });
-    roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label:
-        "Color Highlighter: Set color of bold texts (& press a letter or Backspace)",
-      "display-conditional": (e) => e["block-string"].includes("**"),
-      callback: (e) => setColorCallback(e["block-uid"], "**"),
-    });
-    roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label:
-        "Color Highlighter: Set color of underlined texts (& press a letter or Backspace)",
-      "display-conditional": (e) => e["block-string"].includes("__"),
-      callback: (e) => setColorCallback(e["block-uid"], "__"),
-    });
-    roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label: "Color Highlighter: Set background color, this block only",
-      callback: (e) => setColorCallback(e["block-uid"], "#.bg-"),
-    });
-    roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label: "Color Highlighter: Set background color, with children",
-      callback: (e) => setColorCallback(e["block-uid"], "#.bg-ch-"),
-    });
+    snapshotHandler = commands.registerAlwaysOnCommands();
     //    if (extensionAPI.settings.get("color-tags") == null)
     colorTags = colorTagsDefault;
     colorLetterList = colorTags.join(", ").replaceAll("#c:", "");
@@ -711,11 +942,21 @@ export default {
     if (extensionAPI.settings.get("confirmOption") == null) {
       extensionAPI.settings.set("confirmOption", alwaysConfirm);
     } else alwaysConfirm = extensionAPI.settings.get("confirmOption");
+    if (extensionAPI.settings.get("toolbar-enabled") == null) {
+      extensionAPI.settings.set("toolbar-enabled", true);
+      toolbarEnabled = true;
+    } else toolbarEnabled = extensionAPI.settings.get("toolbar-enabled");
+    if (extensionAPI.settings.get("keyboard-enabled") == null) {
+      extensionAPI.settings.set("keyboard-enabled", true);
+      keyboardEnabled = true;
+    } else keyboardEnabled = extensionAPI.settings.get("keyboard-enabled");
 
-    window.addEventListener("keydown", keyHighlight);
+    if (toolbarEnabled) commands.registerToolbarCommands();
+    if (keyboardEnabled) commands.registerKeyboardListener();
     flag["h"] = false;
     flag["b"] = false;
     flag["i"] = false;
+    flag["x"] = false;
 
     /* Smartblock command
             const arg = {
@@ -738,28 +979,10 @@ export default {
     console.log("Color Highlighter loaded.");
   },
   onunload: () => {
-    roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label: "Color Highlighter: Remove color tags",
-    });
-    roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label:
-        "Color Highlighter: Set color of highlights (& press a letter or Backspace)",
-    });
-    roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label:
-        "Color Highlighter: Set color of bold texts (& press a letter or Backspace)",
-    });
-    roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label:
-        "Color Highlighter: Set color of underlined texts (& press a letter or Backspace)",
-    });
-    roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label: "Color Highlighter: Set background color, this block only",
-    });
-    roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label: "Color Highlighter: Set background color, with children",
-    });
-    window.removeEventListener("keydown", keyHighlight);
+    commands.unregisterAlwaysOnCommands(snapshotHandler);
+    if (toolbarEnabled) commands.unregisterToolbarCommands();
+    if (keyboardEnabled) commands.unregisterKeyboardListener();
+    destroyPopoverPortal();
     console.log("Color Highlighter unloaded.");
   },
 };
