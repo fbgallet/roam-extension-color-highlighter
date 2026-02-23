@@ -1,6 +1,6 @@
 # Color Highlighter
 
-**Highlight, write, underline text or add border box with different colors, or at block (including or not children) apply background or border box. Visual toolbar + full keyboard support.**
+**Highlight, write, underline text or add border box with different colors. At block level (including or not children) apply background or border box. Visual toolbar + full keyboard support.**
 
 ### 🆕 New in v.7 (February 2026)
 
