@@ -20,7 +20,6 @@
 
 <img width="958" height="1024" alt="image" src="https://github.com/user-attachments/assets/70760b40-d503-4669-97f2-735e0bce7b71" />
 
-
 ## Instructions
 
 ### Toolbar
@@ -39,7 +38,7 @@ The extension inserts a tag like `#c:green` before the markdown syntax, e.g.: `#
 
 ### Edit or remove a color
 
-**Right-click on any colored element** in Roam (highlighted text, bold, block with background) to open the edit toolbar and change its color or format. You can also press the toolbar hotkey when the cursor is inside a colored tag to edit it directly.
+**Right-click on any colored element** in Roam (highlighted text, bold, block with background) to open the edit toolbar and change its color or format (double block on a format to change it). You can also press the toolbar hotkey when the cursor is inside a colored tag to edit it directly.
 
 To remove colors, use `Remove color tags` from the command palette (`Ctrl/Cmd+p`) or the block context menu. `Remove all color tags from current page view` strips the entire visible page.
 

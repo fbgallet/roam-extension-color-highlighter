@@ -213,12 +213,11 @@ class ColorPopover extends React.Component {
       return;
     }
 
-    // Enter applies last used color (when no swatch is explicitly focused)
+    // Enter applies focused swatch, or current edit color (edit mode), or last-used color
     if (e.key === "Enter") {
       const { focusedCell, lastColorKey } = this.state;
       if (focusedCell !== null) {
-        // A swatch is focused — let it be activated via click handler / focus
-        // We trigger applyColor from the focused swatch
+        // A swatch is focused — apply that color
         const { row, col } = focusedCell;
         const c = colorPalette[col];
         const key = row === 0 ? c.key : c.key.toUpperCase();
@@ -226,6 +225,16 @@ class ColorPopover extends React.Component {
         e.stopPropagation();
         this.applyColor(key);
         return;
+      }
+      // In edit mode, Enter re-applies the current color (no-op close)
+      if (this.props.editMode && this.props.editInfo) {
+        const editKey = this.props.editInfo.colorKey;
+        if (editKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.applyColor(editKey);
+          return;
+        }
       }
       if (lastColorKey !== null) {
         e.preventDefault();
@@ -396,6 +405,15 @@ class ColorPopover extends React.Component {
     const clickedFmt = formatTypes[i];
     const primaryFmt = formatTypes[selectedFormat];
 
+    // Edit mode: clicking on the already-active format applies the current color
+    if (this.props.editMode && this.props.editInfo && i === selectedFormat) {
+      const editKey = this.props.editInfo.colorKey;
+      if (editKey) {
+        this.applyColor(editKey);
+        return;
+      }
+    }
+
     // Modifier + click on a supportsChildren button while primary is also supportsChildren:
     // toggle it as the extra co-selected block format
     if (
@@ -516,7 +534,8 @@ class ColorPopover extends React.Component {
           focusedCell &&
           focusedCell.row === rowIndex &&
           focusedCell.col === col;
-        const isLastUsed = lastColorKey !== null && key === lastColorKey;
+        const isLastUsed =
+          !editMode && lastColorKey !== null && key === lastColorKey;
         const isCurrentColor = currentKeys.includes(key);
 
         // Determine label text color: dark on light colors, white on dark
@@ -553,6 +572,11 @@ class ColorPopover extends React.Component {
             onMouseDown: (e) => {
               e.preventDefault();
               e.stopPropagation();
+              // In edit mode, Shift+click removes the color
+              if (editMode && e.shiftKey) {
+                this.applyColor("Backspace");
+                return;
+              }
               this.applyColor(key);
             },
             title:
@@ -724,7 +748,7 @@ class ColorPopover extends React.Component {
         this.props.quickMode && !this.state.quickModeActivated
           ? "⚠️ Press Tab to focus Toolbar, or keep typing to dismiss"
           : this.props.editMode
-            ? "Click format/color to change (same or Backspace: remove)"
+            ? "Click color to change  |  Shift+click or Backspace: remove  |  Enter: keep current"
             : "1-6: format  |  7: +children  |  letter: color  | +Shift: dark  |  ↑↓←→: navigate  |  Esc: close",
       ),
     );

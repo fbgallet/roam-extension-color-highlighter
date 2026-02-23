@@ -257,10 +257,13 @@ export function applyColorEditFromPopover(
     !isBackspace && colorTag && hasColor && colorTag === editInfo.colorTag;
   const isSameFormat = newMarkup === editInfo.markup;
 
+  // Same color + same format = no change needed, just close
+  if (isSameColor && isSameFormat) return;
+
   let newContent, cursorTarget;
 
   if (isInline) {
-    if (isBackspace || isSameColor) {
+    if (isBackspace) {
       // Remove the entire wrapper, keep inner text
       newContent =
         content.slice(0, editInfo.wrapperStart) +
@@ -315,7 +318,7 @@ export function applyColorEditFromPopover(
     }
   } else {
     // Block-level tag
-    if (isBackspace || isSameColor) {
+    if (isBackspace) {
       let removeStart = editInfo.wrapperStart;
       if (removeStart > 0 && content[removeStart - 1] === " ") removeStart--;
       newContent =
