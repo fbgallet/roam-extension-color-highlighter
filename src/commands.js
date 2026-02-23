@@ -192,8 +192,16 @@ export function createCommands(deps) {
       const selected = window.roamAlphaAPI.ui.multiselect.getSelected() ?? [];
       if (selected.length > 0) return;
 
-      // 1. Check if the right-click target itself is an inline styled element
+      // Skip elements where Roam has its own native context menu
       const t = e.target;
+      if (
+        t.closest(
+          ".rm-bullet__inner, .rm-page-ref, .rm-alias, .rm-block-ref",
+        )
+      )
+        return;
+
+      // 1. Check if the right-click target itself is an inline styled element
       let isInlineStyled = false;
       if (t.classList) {
         if (
@@ -236,7 +244,8 @@ export function createCommands(deps) {
       e.stopPropagation();
       showColorPopover(uid, applyColorEditFromPopover, {
         editMode: true,
-        editInfo,
+        editInfo: { ...editInfo, fromContextMenu: true },
+        anchorEl: isInlineStyled ? t : blockStyleEl,
       });
     };
     window.addEventListener("contextmenu", contextMenuHandler, true);
@@ -290,6 +299,19 @@ export function createCommands(deps) {
         removeHighlightsFromBlock(e["block-uid"], getRemoveOption()),
     });
 
+    window.roamAlphaAPI.ui.pageContextMenu.addCommand({
+      label: "Color Highlighter: Remove color tags from page",
+      callback: (e) => {
+        const uid = e["page-uid"];
+        if (!uid) return;
+        const tree = getPageViewTreeByBlockUid(uid);
+        if (!tree) return;
+        if (typeof tree.string != "undefined")
+          removeHighlightsFromBlock(tree.uid, getRemoveOption());
+        recursiveCleaning(tree.children);
+      },
+    });
+
     return { snapshotHandler, contextMenuHandler };
   }
 
@@ -308,6 +330,9 @@ export function createCommands(deps) {
     });
     window.roamAlphaAPI.ui.blockContextMenu.removeCommand({
       label: "Color Highlighter: Remove color tags",
+    });
+    window.roamAlphaAPI.ui.pageContextMenu.removeCommand({
+      label: "Color Highlighter: Remove color tags from page",
     });
   }
 

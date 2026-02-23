@@ -29,11 +29,20 @@ const POPOVER_HEIGHT = 180; // approximate popover height in px
 const POPOVER_WIDTH = 300; // approximate popover width in px
 const GAP = 5; // gap between popover and anchor
 
-function getPopoverPosition(selectedUids) {
+function getPopoverPosition(selectedUids, anchorEl) {
   let anchorTop, anchorBottom, anchorLeft, anchorWidth;
 
+  // --- Explicit anchor element (e.g. right-click target) ---
+  if (anchorEl) {
+    const rect = anchorEl.getBoundingClientRect();
+    anchorTop = rect.top;
+    anchorBottom = rect.bottom;
+    anchorLeft = rect.left;
+    anchorWidth = rect.width;
+  }
+
   // --- Multi-block selection: use the first .block-highlight-blue element ---
-  if (selectedUids && selectedUids.length > 0) {
+  if (anchorTop === undefined && selectedUids && selectedUids.length > 0) {
     const firstHighlight = document.querySelector(".block-highlight-blue");
     if (firstHighlight) {
       const rect = firstHighlight.getBoundingClientRect();
@@ -143,7 +152,16 @@ class ColorPopover extends React.Component {
     document.addEventListener("keydown", this.handleKeyDown, true);
     document.addEventListener("mousedown", this.handleClickOutside);
     // In quick mode, keep focus on the textarea until user activates with Tab/confirmKey
-    if (!this.props.quickMode && this.containerRef) this.containerRef.focus();
+    if (!this.props.quickMode) {
+      // Focus the active format button so the user starts with format selection in focus
+      const activeIdx = this.state.selectedFormat;
+      if (this.fmtRefs[activeIdx]) {
+        this.fmtRefs[activeIdx].focus();
+        this.setState({ focusedFmt: activeIdx });
+      } else if (this.containerRef) {
+        this.containerRef.focus();
+      }
+    }
   }
 
   componentWillUnmount() {
@@ -714,7 +732,7 @@ class ColorPopover extends React.Component {
 }
 
 export function showColorPopover(uid, applyColorFn, selection = {}) {
-  const pos = getPopoverPosition(selection.selectedUids);
+  const pos = getPopoverPosition(selection.selectedUids, selection.anchorEl);
   const portal = createPopoverPortal();
 
   ReactDOM.render(

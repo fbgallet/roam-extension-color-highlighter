@@ -302,7 +302,7 @@ export function applyColorEditFromPopover(
         newContent =
           content.slice(0, colorStart) + colorTag + content.slice(colorEnd);
         cursorTarget =
-          editInfo.innerEnd + (colorTag.length - oldColorTag.length);
+          editInfo.wrapperEnd + (colorTag.length - oldColorTag.length);
       } else {
         // No existing color: insert color tag before the markup
         newContent =
@@ -349,18 +349,22 @@ export function applyColorEditFromPopover(
     block: { uid: uid, string: newContent },
   });
 
-  setTimeout(() => {
-    const focusedBlock = window.roamAlphaAPI.ui.getFocusedBlock();
-    if (!focusedBlock) {
-      window.roamAlphaAPI.ui.setBlockFocusAndSelection({
-        location: { "block-uid": uid, "window-id": "main-window" },
-        selection: { start: cursorTarget },
-      });
-    } else {
-      const input = document.activeElement;
-      if (input && input.tagName === "TEXTAREA") {
-        input.selectionStart = input.selectionEnd = cursorTarget;
+  // When triggered from the context menu (right-click), the block was not in
+  // edit mode before — don't force focus/cursor into it.
+  if (!editInfo.fromContextMenu) {
+    setTimeout(() => {
+      const focusedBlock = window.roamAlphaAPI.ui.getFocusedBlock();
+      if (!focusedBlock) {
+        window.roamAlphaAPI.ui.setBlockFocusAndSelection({
+          location: { "block-uid": uid, "window-id": "main-window" },
+          selection: { start: cursorTarget },
+        });
+      } else {
+        const input = document.activeElement;
+        if (input && input.tagName === "TEXTAREA") {
+          input.selectionStart = input.selectionEnd = cursorTarget;
+        }
       }
-    }
-  }, 100);
+    }, 100);
+  }
 }

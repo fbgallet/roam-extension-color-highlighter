@@ -425,8 +425,7 @@ function applyColorFromQuickPopover(
     } else if (isBlockFormat) {
       // Block format: remove the inline markup pair, append block tag at end
       const blockTag = popoverMarkup + colorTag.slice(3); // e.g. "#.bg-" + "blue" = "#.bg-blue"
-      const withoutPair =
-        content.slice(0, pairStart) + content.slice(pairEnd);
+      const withoutPair = content.slice(0, pairStart) + content.slice(pairEnd);
       newContent = (withoutPair.trim() + " " + blockTag).trim();
       cursorTarget = pairStart; // cursor where the pair was
       lastColor[getFlagFromMarkup(popoverMarkup)] = colorTag;
@@ -1024,7 +1023,7 @@ const panelConfig = {
       id: "toolbar-enabled",
       name: "Enable Toolbar",
       description:
-        "Enable the color picker popover (slash command, multiselect menu, command palette popover). Disable to hide all toolbar-related UI.",
+        "Enable the color picker popover and corresponding slash command, multiselect menu and 'Display toolbar' in command palette.",
       action: {
         type: "switch",
         onChange: () => {
@@ -1035,30 +1034,30 @@ const panelConfig = {
       },
     },
     {
-      id: "keyboard-enabled",
-      name: "Enable inline keyboard shortcuts",
-      description:
-        "Enable Cmd/Ctrl+h/b/i/y keyboard shortcuts for inline color mode.",
-      action: {
-        type: "switch",
-        onChange: () => {
-          keyboardEnabled = !keyboardEnabled;
-          if (keyboardEnabled) commands.registerKeyboardListener();
-          else commands.unregisterKeyboardListener();
-        },
-      },
-    },
-    {
       id: "quick-color-enabled",
       name: "Quick color on format hotkeys",
       description:
-        "Show the color picker when pressing Cmd/Ctrl+h/b/i/y. Press Tab or your trigger key to choose a color, or keep typing to dismiss.",
+        "Show the color picker on native formatting with Cmd/Ctrl+h/b/i/y. Keep typing to dismiss or press Tab to apply format/color.",
       action: {
         type: "switch",
         onChange: () => {
           quickColorEnabled = !quickColorEnabled;
           if (quickColorEnabled) commands.registerQuickColorListener();
           else commands.unregisterQuickColorListener();
+        },
+      },
+    },
+    {
+      id: "keyboard-enabled",
+      name: "Enable inline keyboard shortcuts",
+      description:
+        "Enable Cmd/Ctrl+h/b/i/y + color letter keyboard shortcuts for inline color mode (original behavior of the extension).",
+      action: {
+        type: "switch",
+        onChange: () => {
+          keyboardEnabled = !keyboardEnabled;
+          if (keyboardEnabled) commands.registerKeyboardListener();
+          else commands.unregisterKeyboardListener();
         },
       },
     },

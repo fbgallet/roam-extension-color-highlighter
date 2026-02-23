@@ -888,7 +888,6 @@ em,
   font-weight: 600;
   font-size: 11px;
   color: var(--co-main, #333);
-  text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
