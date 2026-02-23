@@ -722,10 +722,10 @@ class ColorPopover extends React.Component {
           className: "cl-popover-hint",
         },
         this.props.quickMode && !this.state.quickModeActivated
-          ? "⚠️ Press Tab to choose a color, or keep typing to dismiss"
+          ? "⚠️ Press Tab to focus Toolbar, or keep typing to dismiss"
           : this.props.editMode
-            ? "Click color to change (same = remove)  |  Backspace: remove  |  Esc: close"
-            : "1-6: format  |  7: +children  |  letter: color  |  Shift: dark  |  ↑↓←→: navigate  |  Esc: close",
+            ? "Click format/color to change (same or Backspace: remove)"
+            : "1-6: format  |  7: +children  |  letter: color  | +Shift: dark  |  ↑↓←→: navigate  |  Esc: close",
       ),
     );
   }

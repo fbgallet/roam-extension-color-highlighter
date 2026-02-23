@@ -25,6 +25,10 @@ export function showHelpDialog() {
   );
 }
 
+function kbd(key) {
+  return React.createElement("kbd", null, key);
+}
+
 function HelpDialog({ onClose }) {
   const handleKeyDown = React.useCallback(
     (e) => {
@@ -42,47 +46,6 @@ function HelpDialog({ onClose }) {
     return () => document.removeEventListener("keydown", handleKeyDown, true);
   }, [handleKeyDown]);
 
-  const sections = [
-    {
-      title: "Open the toolbar",
-      rows: [
-        [
-          "Ctrl+Alt+h",
-          "Hotkey for Toolbar command, apply to cursor position or text selection or blocks multiselect",
-        ],
-        ["/color", "Slash command inside a block"],
-        ["Right-click block(s)", "Block / multiselect context menu (bulk)"],
-      ],
-    },
-    {
-      title: "Inside the toolbar",
-      rows: [
-        ["1–6", "Select format"],
-        ["7", "Toggle block only / block + children"],
-        [
-          "b f g o s r t y w",
-          "Apply light color or dark variant (Shift + letter)",
-        ],
-        ["Ctrl/Cmd+click bg/box btn", "Apply background + box simultaneously"],
-        ["Enter", "Re-apply last used color"],
-      ],
-    },
-    {
-      title:
-        "Other commands (command palette or block/multiselect context menu)",
-      rows: [
-        [
-          "Remove color tags",
-          "Strip all color tags from current/selected block",
-        ],
-        [
-          "Change color of highlights",
-          "Replace existing colors by the selected one",
-        ],
-      ],
-    },
-  ];
-
   return React.createElement(
     "div",
     {
@@ -99,7 +62,7 @@ function HelpDialog({ onClose }) {
       React.createElement(
         "span",
         { className: "cl-help-title" },
-        "Color Highlighter — Shortcuts",
+        "Color Highlighter — Help",
       ),
       React.createElement(
         "button",
@@ -111,39 +74,127 @@ function HelpDialog({ onClose }) {
         React.createElement("span", { className: "bp3-icon bp3-icon-cross" }),
       ),
     ),
-    // Sections
-    ...sections.map((sec) =>
+
+    // Open the toolbar
+    React.createElement(
+      "div",
+      { className: "cl-help-section" },
       React.createElement(
         "div",
-        { key: sec.title, className: "cl-help-section" },
+        { className: "cl-help-section-title" },
+        "Open the toolbar",
+      ),
+      React.createElement(
+        "div",
+        { className: "cl-help-row" },
         React.createElement(
           "div",
-          { className: "cl-help-section-title" },
-          sec.title,
+          { className: "cl-help-kbd-col" },
+          kbd("Ctrl+Alt+h"),
         ),
         React.createElement(
-          "table",
-          { className: "cl-help-table" },
-          React.createElement(
-            "tbody",
-            null,
-            ...sec.rows.map(([kbd, desc], i) =>
-              React.createElement(
-                "tr",
-                { key: i },
-                React.createElement(
-                  "td",
-                  { className: "cl-help-kbd" },
-                  React.createElement("kbd", null, kbd),
-                ),
-                React.createElement("td", { className: "cl-help-desc" }, desc),
-              ),
-            ),
-          ),
+          "div",
+          { className: "cl-help-desc-col" },
+          "Main hotkey — opens the toolbar on the current cursor position, a text selection, or a block multiselect",
+        ),
+      ),
+      React.createElement(
+        "p",
+        { className: "cl-help-text" },
+        "Also available via the ",
+        kbd("/color"),
+        " slash command inside a block.",
+      ),
+      React.createElement(
+        "p",
+        { className: "cl-help-text" },
+        "Once the Toolbar is focused (with Tab when using native format hotkeys) all can be done with Keyboard-only with numbers, letters, Space to select, Enter to apply last color.",
+      ),
+    ),
+
+    // Right-click to change format/color
+    React.createElement(
+      "div",
+      { className: "cl-help-section" },
+      React.createElement(
+        "div",
+        { className: "cl-help-section-title" },
+        "Change or remove color",
+      ),
+      React.createElement(
+        "p",
+        { className: "cl-help-text" },
+        React.createElement(
+          "strong",
+          null,
+          "Right-click on any colored/formatted element",
+        ),
+        " in Roam to change its color or format directly. You can also press Toolbar command/hotkeys when cursor is in a format tag/content to edit it.",
+      ),
+    ),
+
+    // Multiselect / bulk
+    React.createElement(
+      "div",
+      { className: "cl-help-section" },
+      React.createElement(
+        "div",
+        { className: "cl-help-section-title" },
+        "Multiselect & bulk processing",
+      ),
+      React.createElement(
+        "p",
+        { className: "cl-help-text" },
+        "Select multiple blocks in Roam (",
+        kbd("Shift+click"),
+        " or ",
+        kbd("Shift+↑/↓"),
+        "), then open the toolbar with ",
+        kbd("Ctrl+Alt+h"),
+        " or right-click to access the block context menu. All color and remove-color commands apply to the whole selection at once.",
+      ),
+    ),
+
+    // Card grid
+    React.createElement(
+      "div",
+      { className: "cl-help-section" },
+      React.createElement(
+        "div",
+        { className: "cl-help-section-title" },
+        "Card grid (experimental — not in toolbar)",
+      ),
+      React.createElement(
+        "p",
+        { className: "cl-help-text" },
+        "Add one of the following tags to a ",
+        React.createElement("strong", null, "parent block"),
+        " to display its children as a card grid (min 300px each):",
+      ),
+      React.createElement(
+        "ul",
+        { className: "cl-help-list" },
+        React.createElement("li", null, kbd("#.card-grid"), " — basic grid"),
+        React.createElement(
+          "li",
+          null,
+          kbd("#.card-grid-light"),
+          " / ",
+          kbd("#.card-grid-dark"),
+          " — themed variant",
+        ),
+        React.createElement(
+          "li",
+          null,
+          kbd("#.card-grid-color"),
+          " (e.g. ",
+          kbd("#.card-grid-blue"),
+          ") — colored cards with matching title",
         ),
       ),
     ),
-    // Support section
+
+    // Support
     React.createElement("div", { className: "cl-help-divider" }),
     React.createElement(
       "div",

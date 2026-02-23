@@ -1,3 +1,13 @@
+### v.7 (February 2026)
+
+New features:
+
+- Visual toolbar, opened with a customizable hotkey (`Ctrl+Alt+h` by default), `/color` slash command, or block context menu
+- Edit mode: right-click on any colored element (or re-trigger the toolbar hotkey on it) to change its color or format in place
+- Bulk processing: multiselect blocks and apply or remove colors in one action via the toolbar or block context menu
+- New inline box format: wraps selected text in a colored border box
+- New block-level box format: adds a colored border around a whole block (and optionally its children)
+
 ### v.6 (January 3rd, 2023)
 
 Updated:
