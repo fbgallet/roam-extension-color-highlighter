@@ -9,12 +9,16 @@ import { getBlockContentByUid } from "./roamAPI";
  *   - getRemoveOption                          (setting accessor)
  *   - applyColorFromPopover
  *   - applyColorChangeFromPopover
+ *   - applyColorEditFromPopover
+ *   - detectWrapperAtCursor
+ *   - detectWrapperFromDOM
+ *   - detectBlockStyleFromDOM
  *   - getMarkupInfoFromBlocks
  *   - removeHighlightsFromBlock
  *   - getPageViewTreeByBlockUid
  *   - recursiveCleaning
- *   - setColorCallback
  *   - keyHighlight
+ *   - keyHighlightQuickColor
  */
 export function createCommands(deps) {
   const {
@@ -24,12 +28,16 @@ export function createCommands(deps) {
     getRemoveOption,
     applyColorFromPopover,
     applyColorChangeFromPopover,
+    applyColorEditFromPopover,
+    detectWrapperAtCursor,
+    detectWrapperFromDOM,
+    detectBlockStyleFromDOM,
     getMarkupInfoFromBlocks,
     removeHighlightsFromBlock,
     getPageViewTreeByBlockUid,
     recursiveCleaning,
-    setColorCallback,
     keyHighlight,
+    keyHighlightQuickColor,
   } = deps;
 
   function registerToolbarCommands() {
@@ -39,7 +47,7 @@ export function createCommands(deps) {
     window.roamAlphaAPI.ui.slashCommand.addCommand({
       label: "Color Highlighter",
       callback: (args) => {
-        const slashPos = (args.indexes ?? [null])[0];
+        const slashPos = (args.indexes ?? [null])[0] - 1;
         setTimeout(
           () =>
             showColorPopover(args["block-uid"], applyColorFromPopover, {
@@ -55,7 +63,7 @@ export function createCommands(deps) {
     // Block multiselect is not lost when the palette opens, so read it live.
     // Text selection IS lost, so we use the snapshot captured on Cmd/Ctrl+P.
     extensionAPI.ui.commandPalette.addCommand({
-      label: "Color Highlighter: Color popover",
+      label: "Color Highlighter: Open Toolbar",
       callback: () => {
         const selectedBlocks =
           window.roamAlphaAPI.ui.multiselect.getSelected() ?? [];
@@ -79,12 +87,24 @@ export function createCommands(deps) {
         const selEnd =
           snapshot?.selEnd ??
           (textarea?.tagName === "TEXTAREA" ? textarea.selectionEnd : null);
-        showColorPopover(uid, applyColorFromPopover, { selStart, selEnd });
+        // Detect if cursor is inside an existing color wrapper
+        const editInfo = detectWrapperAtCursor(uid, selStart);
+        if (editInfo.found) {
+          showColorPopover(uid, applyColorEditFromPopover, {
+            selStart,
+            selEnd,
+            editMode: true,
+            editInfo,
+          });
+        } else {
+          showColorPopover(uid, applyColorFromPopover, { selStart, selEnd });
+        }
       },
+      "default-hotkey": "ctrl-alt-h",
     });
 
     window.roamAlphaAPI.ui.msContextMenu.addCommand({
-      label: "Color Highlighter: Display Toolbar",
+      label: "Color Highlighter: Open Toolbar",
       callback: (e) => {
         const blocks =
           e?.blocks ?? window.roamAlphaAPI.ui.multiselect.getSelected() ?? [];
@@ -150,10 +170,10 @@ export function createCommands(deps) {
       label: "Color Highlighter",
     });
     extensionAPI.ui.commandPalette.removeCommand({
-      label: "Color Highlighter: Color popover",
+      label: "Color Highlighter: Open Toolbar",
     });
     window.roamAlphaAPI.ui.msContextMenu.removeCommand({
-      label: "Color Highlighter: Display Toolbar",
+      label: "Color Highlighter: Open Toolbar",
     });
     window.roamAlphaAPI.ui.msContextMenu.removeCommand({
       label: "Color Highlighter: Remove color tags",
@@ -164,6 +184,63 @@ export function createCommands(deps) {
   }
 
   function registerAlwaysOnCommands() {
+    // Right-click on a styled element (.rm-highlight, .rm-bold, em, .rm-strikethrough)
+    // or inside a block-level styled container (.bg-*, .box-*):
+    // open toolbar in edit mode instead of showing Roam's context menu.
+    const contextMenuHandler = (e) => {
+      // Skip if multiselect is active — let bulk operations handle it
+      const selected = window.roamAlphaAPI.ui.multiselect.getSelected() ?? [];
+      if (selected.length > 0) return;
+
+      // 1. Check if the right-click target itself is an inline styled element
+      const t = e.target;
+      let isInlineStyled = false;
+      if (t.classList) {
+        if (
+          t.classList.contains("rm-highlight") ||
+          t.classList.contains("rm-bold") ||
+          t.classList.contains("rm-strikethrough")
+        )
+          isInlineStyled = true;
+      }
+      if (!isInlineStyled && t.tagName === "EM") isInlineStyled = true;
+
+      // 2. Check ancestors for block-level style classes (.bg-*, .box-*)
+      let blockStyleEl = null;
+      if (!isInlineStyled) {
+        let ancestor = t.closest("[class*='bg-'], [class*='box-']");
+        if (ancestor) {
+          const match = [...ancestor.classList].find((c) =>
+            /^(bg|box)-(ch-)?[a-zA-Z]+$/.test(c),
+          );
+          if (match) blockStyleEl = ancestor;
+        }
+      }
+
+      if (!isInlineStyled && !blockStyleEl) return;
+
+      // Find the block uid from the closest .roam-block element's data attribute
+      const blockEl = t.closest(".rm-block");
+      if (!blockEl) return;
+      const uid = blockEl.getAttribute("data-block-uid");
+      if (!uid) return;
+
+      const editInfo = isInlineStyled
+        ? detectWrapperFromDOM(uid, t)
+        : detectBlockStyleFromDOM(uid, blockStyleEl);
+
+      if (!editInfo.found) return;
+
+      // Prevent native context menu and open toolbar in edit mode
+      e.preventDefault();
+      e.stopPropagation();
+      showColorPopover(uid, applyColorEditFromPopover, {
+        editMode: true,
+        editInfo,
+      });
+    };
+    window.addEventListener("contextmenu", contextMenuHandler, true);
+
     // Snapshot text selection just before the command palette opens (Cmd/Ctrl+P),
     // because the palette steals focus and clears textarea selection.
     // Block multiselect is NOT lost when the palette opens, so no snapshot needed for it.
@@ -206,183 +283,31 @@ export function createCommands(deps) {
         }
       },
     });
-    extensionAPI.ui.commandPalette.addCommand({
-      label:
-        "Color Highlighter: Set color of highlights in current block (+letter or Backspace)",
-      callback: () => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "^^");
-      },
-    });
-    extensionAPI.ui.commandPalette.addCommand({
-      label:
-        "Color Highlighter: Set color of bolded texts in current block (+letter or Backspace)",
-      callback: () => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "**");
-      },
-    });
-    extensionAPI.ui.commandPalette.addCommand({
-      label:
-        "Color Highlighter: Set color of underlined texts in current block (+letter or Backspace)",
-      callback: () => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "__");
-      },
-    });
-    extensionAPI.ui.commandPalette.addCommand({
-      label:
-        "Color Highlighter: Set color of box texts in current block (+letter or Backspace)",
-      callback: () => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "~~");
-      },
-    });
-    extensionAPI.ui.commandPalette.addCommand({
-      label: "Color Highlighter: Set background color, this block only",
-      callback: () => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "#.bg-");
-      },
-    });
-    extensionAPI.ui.commandPalette.addCommand({
-      label: "Color Highlighter: Set background color, with children",
-      callback: () => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "#.bg-ch-");
-      },
-    });
-    extensionAPI.ui.commandPalette.addCommand({
-      label: "Color Highlighter: Set box color, this block only",
-      callback: () => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "#.box-");
-      },
-    });
-    extensionAPI.ui.commandPalette.addCommand({
-      label: "Color Highlighter: Set box color, with children",
-      callback: () => {
-        let uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
-        setColorCallback(uid, "#.box-ch-");
-      },
-    });
-
     window.roamAlphaAPI.ui.blockContextMenu.addCommand({
       label: "Color Highlighter: Remove color tags",
       "display-conditional": (e) => e["block-string"].includes("#c:"),
       callback: (e) =>
         removeHighlightsFromBlock(e["block-uid"], getRemoveOption()),
     });
-    window.roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label:
-        "Color Highlighter: Set color of highlights (& press a letter or Backspace)",
-      "display-conditional": (e) => e["block-string"].includes("^^"),
-      callback: (e) => setColorCallback(e["block-uid"], "^^"),
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label:
-        "Color Highlighter: Set color of bold texts (& press a letter or Backspace)",
-      "display-conditional": (e) => e["block-string"].includes("**"),
-      callback: (e) => setColorCallback(e["block-uid"], "**"),
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label:
-        "Color Highlighter: Set color of underlined texts (& press a letter or Backspace)",
-      "display-conditional": (e) => e["block-string"].includes("__"),
-      callback: (e) => setColorCallback(e["block-uid"], "__"),
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label:
-        "Color Highlighter: Set color of box texts (& press a letter or Backspace)",
-      "display-conditional": (e) => e["block-string"].includes("~~"),
-      callback: (e) => setColorCallback(e["block-uid"], "~~"),
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label: "Color Highlighter: Set background color, this block only",
-      callback: (e) => setColorCallback(e["block-uid"], "#.bg-"),
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label: "Color Highlighter: Set background color, with children",
-      callback: (e) => setColorCallback(e["block-uid"], "#.bg-ch-"),
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label: "Color Highlighter: Set box color, this block only",
-      callback: (e) => setColorCallback(e["block-uid"], "#.box-"),
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.addCommand({
-      label: "Color Highlighter: Set box color, with children",
-      callback: (e) => setColorCallback(e["block-uid"], "#.box-ch-"),
-    });
 
-    return snapshotHandler;
+    return { snapshotHandler, contextMenuHandler };
   }
 
-  function unregisterAlwaysOnCommands(snapshotHandler) {
-    window.removeEventListener("keydown", snapshotHandler, true);
+  function unregisterAlwaysOnCommands(handlers) {
+    window.removeEventListener("keydown", handlers.snapshotHandler, true);
+    window.removeEventListener(
+      "contextmenu",
+      handlers.contextMenuHandler,
+      true,
+    );
     extensionAPI.ui.commandPalette.removeCommand({
       label: "Color Highlighter: Remove color tags from current BLOCK",
     });
     extensionAPI.ui.commandPalette.removeCommand({
       label: "Color Highlighter: Remove color tags from current PAGE zoom view",
     });
-    extensionAPI.ui.commandPalette.removeCommand({
-      label:
-        "Color Highlighter: Set color of highlights in current block (+letter or Backspace)",
-    });
-    extensionAPI.ui.commandPalette.removeCommand({
-      label:
-        "Color Highlighter: Set color of bolded texts in current block (+letter or Backspace)",
-    });
-    extensionAPI.ui.commandPalette.removeCommand({
-      label:
-        "Color Highlighter: Set color of underlined texts in current block (+letter or Backspace)",
-    });
-    extensionAPI.ui.commandPalette.removeCommand({
-      label:
-        "Color Highlighter: Set color of box texts in current block (+letter or Backspace)",
-    });
-    extensionAPI.ui.commandPalette.removeCommand({
-      label: "Color Highlighter: Set background color, this block only",
-    });
-    extensionAPI.ui.commandPalette.removeCommand({
-      label: "Color Highlighter: Set background color, with children",
-    });
-    extensionAPI.ui.commandPalette.removeCommand({
-      label: "Color Highlighter: Set box color, this block only",
-    });
-    extensionAPI.ui.commandPalette.removeCommand({
-      label: "Color Highlighter: Set box color, with children",
-    });
     window.roamAlphaAPI.ui.blockContextMenu.removeCommand({
       label: "Color Highlighter: Remove color tags",
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label:
-        "Color Highlighter: Set color of highlights (& press a letter or Backspace)",
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label:
-        "Color Highlighter: Set color of bold texts (& press a letter or Backspace)",
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label:
-        "Color Highlighter: Set color of underlined texts (& press a letter or Backspace)",
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label:
-        "Color Highlighter: Set color of box texts (& press a letter or Backspace)",
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label: "Color Highlighter: Set background color, this block only",
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label: "Color Highlighter: Set background color, with children",
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label: "Color Highlighter: Set box color, this block only",
-    });
-    window.roamAlphaAPI.ui.blockContextMenu.removeCommand({
-      label: "Color Highlighter: Set box color, with children",
     });
   }
 
@@ -394,6 +319,14 @@ export function createCommands(deps) {
     window.removeEventListener("keydown", keyHighlight);
   }
 
+  function registerQuickColorListener() {
+    window.addEventListener("keydown", keyHighlightQuickColor, true);
+  }
+
+  function unregisterQuickColorListener() {
+    window.removeEventListener("keydown", keyHighlightQuickColor, true);
+  }
+
   return {
     registerToolbarCommands,
     unregisterToolbarCommands,
@@ -401,5 +334,7 @@ export function createCommands(deps) {
     unregisterAlwaysOnCommands,
     registerKeyboardListener,
     unregisterKeyboardListener,
+    registerQuickColorListener,
+    unregisterQuickColorListener,
   };
 }

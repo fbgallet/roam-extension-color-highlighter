@@ -3,6 +3,13 @@ import { showColorPopover, destroyPopoverPortal } from "./colorPopover";
 import { destroyHelpPortal } from "./helpDialog";
 import { filterTopLevelBlocks, getBlockContentByUid } from "./roamAPI";
 import { createCommands } from "./commands";
+import {
+  initEditMode,
+  detectWrapperAtCursor,
+  detectWrapperFromDOM,
+  detectBlockStyleFromDOM,
+  applyColorEditFromPopover,
+} from "./editMode";
 
 const colorTagsRegex = /#c:[a-zA-Z]* |#c:[a-zA-Z]* |#c:[a-zA-Z]* /g;
 const colorTagsWithMarkupRegex =
@@ -68,6 +75,8 @@ let keyboardEnabled = true;
 let lastColor = { h: "", b: "", i: "", bg: "", box: "", x: "" };
 let confirmKey = "Control";
 let alwaysConfirm = false;
+let quickColorEnabled = false;
+let quickColorHandled = false;
 let colorApplied = false;
 class CursorPosition {
   constructor(elt = document.activeElement) {
@@ -101,6 +110,10 @@ const AppToaster = Toaster.create({
 });
 
 function keyHighlight(e) {
+  if (quickColorHandled) {
+    quickColorHandled = false;
+    return;
+  }
   if (flag["h"] || flag["b"] || flag["i"] || flag["x"]) {
     currentPos.setPos();
     if (
@@ -288,6 +301,250 @@ function addColor(color, flag) {
   currentPos.setPos();
   setCursorPosition(tagLength);
   //  }
+}
+
+// Quick Color: mapping from hotkey to format index and markup
+const quickColorKeyMap = {
+  h: { formatIndex: 0, markup: "^^" },
+  b: { formatIndex: 1, markup: "**" },
+  i: { formatIndex: 2, markup: "__" },
+  y: { formatIndex: 3, markup: "~~" },
+};
+
+function keyHighlightQuickColor(e) {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const mapping = quickColorKeyMap[e.key];
+  if (!mapping) return;
+
+  // Capture selection BEFORE Roam processes the hotkey
+  const textarea = document.activeElement;
+  if (!textarea || textarea.tagName !== "TEXTAREA") return;
+  const uid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+  if (!uid) return;
+  const origSelStart = textarea.selectionStart;
+  const origSelEnd = textarea.selectionEnd;
+  const hadSelection = origSelStart !== origSelEnd;
+
+  // Set flag so keyHighlight (bubble phase) skips this event
+  quickColorHandled = true;
+
+  // Do NOT preventDefault — let Roam insert the plain markup (e.g. ^^^^)
+  // After Roam finishes, show the popover with post-Roam cursor info
+  setTimeout(() => {
+    const ta = document.activeElement;
+    if (!ta || ta.tagName !== "TEXTAREA") return;
+
+    const postSelStart = ta.selectionStart;
+    const postSelEnd = ta.selectionEnd;
+
+    showQuickColorPopover(uid, mapping.formatIndex, mapping.markup, {
+      selStart: postSelStart,
+      selEnd: postSelEnd,
+      hadSelection,
+      origSelStart,
+      origSelEnd,
+      textarea: ta,
+    });
+  }, 150);
+}
+
+function showQuickColorPopover(uid, formatIndex, originalMarkup, cursorInfo) {
+  showColorPopover(
+    uid,
+    (syntheticEvent, _uid, popoverMarkup, _selStart, _selEnd, extraMarkup) => {
+      applyColorFromQuickPopover(
+        syntheticEvent,
+        uid,
+        originalMarkup,
+        popoverMarkup,
+        cursorInfo,
+      );
+    },
+    {
+      selStart: cursorInfo.selStart,
+      selEnd: cursorInfo.selEnd,
+      quickMode: true,
+      initialFormat: formatIndex,
+      confirmKey: confirmKey,
+      onDismiss: () => {
+        // Restore focus to the textarea
+        if (
+          cursorInfo.textarea &&
+          document.body.contains(cursorInfo.textarea)
+        ) {
+          cursorInfo.textarea.focus();
+        }
+      },
+    },
+  );
+}
+
+function applyColorFromQuickPopover(
+  syntheticEvent,
+  uid,
+  originalMarkup,
+  popoverMarkup,
+  cursorInfo,
+) {
+  const colorTag = checkColorKeys(syntheticEvent.key);
+  if (!colorTag && syntheticEvent.key !== "Backspace") return;
+
+  // Re-read content fresh (user may have typed since popover appeared, but we
+  // handle the dismiss case in the popover, so content should still match)
+  const content = getBlockContent(uid);
+  const markupLen = originalMarkup.length;
+
+  // After Roam processed the hotkey:
+  // - No selection: Roam inserted ^^^^, cursor between → selStart points between the pair
+  // - Had selection: Roam wrapped ^^selected^^, cursor at end of closing ^^
+  const { selStart, hadSelection } = cursorInfo;
+
+  let newContent, cursorTarget;
+
+  // Determine if the user switched to a block-level format
+  const isBlockFormat = popoverMarkup.includes("#");
+
+  if (!hadSelection) {
+    // Roam inserted empty markup pair: e.g. "some ^^^^text"
+    // selStart is between: "some ^^|^^text"
+    const pairStart = selStart - markupLen;
+    const pairEnd = selStart + markupLen;
+    if (
+      pairStart < 0 ||
+      pairEnd > content.length ||
+      content.slice(pairStart, pairStart + markupLen) !== originalMarkup ||
+      content.slice(selStart, selStart + markupLen) !== originalMarkup
+    ) {
+      return; // Can't find the markup, abort
+    }
+
+    if (syntheticEvent.key === "Backspace") {
+      // Remove the empty markup pair
+      newContent = content.slice(0, pairStart) + content.slice(pairEnd);
+      cursorTarget = pairStart;
+    } else if (isBlockFormat) {
+      // Block format: remove the inline markup pair, append block tag at end
+      const blockTag = popoverMarkup + colorTag.slice(3); // e.g. "#.bg-" + "blue" = "#.bg-blue"
+      const withoutPair =
+        content.slice(0, pairStart) + content.slice(pairEnd);
+      newContent = (withoutPair.trim() + " " + blockTag).trim();
+      cursorTarget = pairStart; // cursor where the pair was
+      lastColor[getFlagFromMarkup(popoverMarkup)] = colorTag;
+    } else {
+      const useMarkup = popoverMarkup;
+      if (useMarkup === originalMarkup) {
+        // Same format: insert color tag before the opening markup
+        newContent =
+          content.slice(0, pairStart) +
+          colorTag +
+          " " +
+          content.slice(pairStart);
+        cursorTarget = pairStart + colorTag.length + 1 + markupLen;
+      } else {
+        // Different inline format: replace markup pair
+        newContent =
+          content.slice(0, pairStart) +
+          colorTag +
+          " " +
+          useMarkup +
+          useMarkup +
+          content.slice(pairEnd);
+        cursorTarget = pairStart + colorTag.length + 1 + useMarkup.length;
+      }
+      lastColor[getFlagFromMarkup(useMarkup)] = colorTag;
+    }
+  } else {
+    // Roam wrapped selected text: "before ^^selected^^after"
+    // Use original selection positions to reliably find where Roam placed the markup.
+    // Roam inserted opening markup at origSelStart and closing markup at origSelEnd + markupLen.
+    const { origSelStart, origSelEnd } = cursorInfo;
+    const openStart = origSelStart;
+    const openEnd = openStart + markupLen;
+    const closeStart = origSelEnd + markupLen; // original text shifted right by opening markup
+    const closeEnd = closeStart + markupLen;
+
+    // Verify the markup is where we expect
+    if (
+      openStart < 0 ||
+      closeEnd > content.length ||
+      content.slice(openStart, openEnd) !== originalMarkup ||
+      content.slice(closeStart, closeEnd) !== originalMarkup
+    ) {
+      return;
+    }
+
+    const selectedText = content.slice(openEnd, closeStart);
+
+    if (syntheticEvent.key === "Backspace") {
+      // Remove the markup wrapper, keep the selected text
+      newContent =
+        content.slice(0, openStart) + selectedText + content.slice(closeEnd);
+      cursorTarget = openStart + selectedText.length;
+    } else if (isBlockFormat) {
+      // Block format: remove the inline markup, keep the selected text plain,
+      // and append block tag at end
+      const blockTag = popoverMarkup + colorTag.slice(3);
+      const withoutMarkup =
+        content.slice(0, openStart) + selectedText + content.slice(closeEnd);
+      newContent = (withoutMarkup.trim() + " " + blockTag).trim();
+      cursorTarget = openStart + selectedText.length;
+      lastColor[getFlagFromMarkup(popoverMarkup)] = colorTag;
+    } else {
+      const useMarkup = popoverMarkup;
+      if (useMarkup === originalMarkup) {
+        // Same format: insert color tag before the opening markup
+        newContent =
+          content.slice(0, openStart) +
+          colorTag +
+          " " +
+          content.slice(openStart);
+        cursorTarget =
+          openStart +
+          colorTag.length +
+          1 +
+          markupLen +
+          selectedText.length +
+          markupLen;
+      } else {
+        // Different inline format: replace both markup delimiters
+        newContent =
+          content.slice(0, openStart) +
+          colorTag +
+          " " +
+          useMarkup +
+          selectedText +
+          useMarkup +
+          content.slice(closeEnd);
+        cursorTarget =
+          openStart +
+          colorTag.length +
+          1 +
+          useMarkup.length +
+          selectedText.length +
+          useMarkup.length;
+      }
+      lastColor[getFlagFromMarkup(useMarkup)] = colorTag;
+    }
+  }
+
+  window.roamAlphaAPI.updateBlock({
+    block: { uid: uid, string: newContent },
+  });
+
+  setTimeout(() => {
+    const focusedBlock = window.roamAlphaAPI.ui.getFocusedBlock();
+    if (!focusedBlock) {
+      window.roamAlphaAPI.ui.setBlockFocusAndSelection({
+        location: { "block-uid": uid, "window-id": "main-window" },
+        selection: { start: cursorTarget },
+      });
+    } else {
+      const input = document.activeElement;
+      if (input && input.tagName === "TEXTAREA") {
+        input.selectionStart = input.selectionEnd = cursorTarget;
+      }
+    }
+  }, 100);
 }
 
 function getMarkupInfoFromBlocks(uids) {
@@ -723,18 +980,6 @@ function getFlagFromMarkup(markup) {
   return key;
 }
 
-function setColorCallback(uid, markup) {
-  colorToast(false, true);
-  keepColor && setColorInBlock(null, uid, markup, true);
-  document.addEventListener(
-    "keydown",
-    function (e) {
-      setColorInBlock(e, uid, markup);
-    },
-    argListener,
-  );
-}
-
 function chooseConfirmKey(key) {
   switch (key) {
     case "Command or Meta":
@@ -770,7 +1015,7 @@ function getBlockContent(uid) {
 /* CONFIG & LOAD settings */
 
 let commands = null;
-let snapshotHandler = null;
+let alwaysOnHandlers = null;
 
 const panelConfig = {
   tabTitle: "Color Highlighter",
@@ -803,21 +1048,20 @@ const panelConfig = {
         },
       },
     },
-    /*       {id:     "color-tags",
-        name:   "Color tags",
-        description: "Customized list of color tags, separated with a comma",
-        action: {type:        "input",
-                placeholder: "#c:red, #c:green",
-                onChange:    (evt) => { 
-                  colorTags = evt.target.value;
-                 }}},
-        {id:     "color-keys",
-         name:   "Color keys",
-         description: "Customized list of unique keys to trigger colors, in the same ordre as color tags",
-         action: {type:     "input",
-                  onChange: (evt) => { 
-        //         colorKeys = evt.taget.value;
-         }}},*/
+    {
+      id: "quick-color-enabled",
+      name: "Quick color on format hotkeys",
+      description:
+        "Show the color picker when pressing Cmd/Ctrl+h/b/i/y. Press Tab or your trigger key to choose a color, or keep typing to dismiss.",
+      action: {
+        type: "switch",
+        onChange: () => {
+          quickColorEnabled = !quickColorEnabled;
+          if (quickColorEnabled) commands.registerQuickColorListener();
+          else commands.unregisterQuickColorListener();
+        },
+      },
+    },
     {
       id: "keep-color",
       name: "Keep last color",
@@ -883,7 +1127,7 @@ const panelConfig = {
       id: "toast-option",
       name: "Display popup reminder",
       description:
-        "Display popup notifications to remind to press a key and the list of colors",
+        "Display popup notifications to remind to press a key and the list of colors (only relevant when Quick color on format hotkeys is disabled)",
       action: {
         type: "switch",
         onChange: (evt) => {
@@ -898,27 +1142,36 @@ export default {
   onload: ({ extensionAPI }) => {
     extensionAPI.settings.panel.create(panelConfig);
 
-    commands = createCommands({
-      extensionAPI,
-      getLastMultiselect: () => lastMultiselect,
-      setLastMultiselect: (v) => { lastMultiselect = v; },
-      getRemoveOption: () => removeOption,
-      applyColorFromPopover,
-      applyColorChangeFromPopover,
-      getMarkupInfoFromBlocks,
-      removeHighlightsFromBlock,
-      getPageViewTreeByBlockUid,
-      recursiveCleaning,
-      setColorCallback,
-      keyHighlight,
-    });
-    snapshotHandler = commands.registerAlwaysOnCommands();
     //    if (extensionAPI.settings.get("color-tags") == null)
     colorTags = colorTagsDefault;
     colorLetterList = colorTags.join(", ").replaceAll("#c:", "");
     //    else colorTags = extensionAPI.settings.get("color-tags").replace(' ','').split(",");
     //    if (extensionAPI.settings.get("color-keys") == null)
     colorKeys = colorKeysDefault;
+
+    initEditMode(colorTags, colorKeys, checkColorKeys);
+
+    commands = createCommands({
+      extensionAPI,
+      getLastMultiselect: () => lastMultiselect,
+      setLastMultiselect: (v) => {
+        lastMultiselect = v;
+      },
+      getRemoveOption: () => removeOption,
+      applyColorFromPopover,
+      applyColorChangeFromPopover,
+      applyColorEditFromPopover,
+      detectWrapperAtCursor,
+      detectWrapperFromDOM,
+      detectBlockStyleFromDOM,
+      getMarkupInfoFromBlocks,
+      removeHighlightsFromBlock,
+      getPageViewTreeByBlockUid,
+      recursiveCleaning,
+      keyHighlight,
+      keyHighlightQuickColor,
+    });
+    alwaysOnHandlers = commands.registerAlwaysOnCommands();
     //    else colorTags = extensionAPI.settings.get("color-keys").replace(' ','').split(",");
 
     if (extensionAPI.settings.get("keep-color") == null) {
@@ -951,9 +1204,14 @@ export default {
       extensionAPI.settings.set("keyboard-enabled", true);
       keyboardEnabled = true;
     } else keyboardEnabled = extensionAPI.settings.get("keyboard-enabled");
+    if (extensionAPI.settings.get("quick-color-enabled") == null) {
+      extensionAPI.settings.set("quick-color-enabled", true);
+      quickColorEnabled = false;
+    } else quickColorEnabled = extensionAPI.settings.get("quick-color-enabled");
 
     if (toolbarEnabled) commands.registerToolbarCommands();
     if (keyboardEnabled) commands.registerKeyboardListener();
+    if (quickColorEnabled) commands.registerQuickColorListener();
     flag["h"] = false;
     flag["b"] = false;
     flag["i"] = false;
@@ -980,9 +1238,10 @@ export default {
     console.log("Color Highlighter loaded.");
   },
   onunload: () => {
-    commands.unregisterAlwaysOnCommands(snapshotHandler);
+    commands.unregisterAlwaysOnCommands(alwaysOnHandlers);
     if (toolbarEnabled) commands.unregisterToolbarCommands();
     if (keyboardEnabled) commands.unregisterKeyboardListener();
+    if (quickColorEnabled) commands.unregisterQuickColorListener();
     destroyPopoverPortal();
     destroyHelpPortal();
     console.log("Color Highlighter unloaded.");

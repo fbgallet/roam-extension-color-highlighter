@@ -27,7 +27,7 @@ export function destroyPopoverPortal() {
 
 const POPOVER_HEIGHT = 180; // approximate popover height in px
 const POPOVER_WIDTH = 300; // approximate popover width in px
-const GAP = 8; // gap between popover and anchor
+const GAP = 5; // gap between popover and anchor
 
 function getPopoverPosition(selectedUids) {
   let anchorTop, anchorBottom, anchorLeft, anchorWidth;
@@ -95,7 +95,20 @@ class ColorPopover extends React.Component {
     const savedWithChildren = localStorage.getItem(LS_CHILDREN_KEY) === "1";
 
     let initialFormat = Math.min(savedFormat, formatTypes.length - 1);
-    if (
+    if (props.editMode && props.editInfo) {
+      // Edit mode: pre-select the format matching the detected wrapper
+      const editMarkup = props.editInfo.markup;
+      // For block-level markups like "#.bg-" or "#.bg-ch-", normalize to base
+      const baseMarkup = editMarkup.replace(/ch-$/, "");
+      const autoIdx = formatTypes.findIndex((f) => f.markup === baseMarkup);
+      if (autoIdx !== -1) initialFormat = autoIdx;
+    } else if (
+      props.quickMode &&
+      props.initialFormat !== null &&
+      props.initialFormat !== undefined
+    ) {
+      initialFormat = props.initialFormat;
+    } else if (
       props.changeMode &&
       props.isSingleMarkupType &&
       props.presentMarkups?.length === 1
@@ -106,13 +119,17 @@ class ColorPopover extends React.Component {
       if (autoIdx !== -1) initialFormat = autoIdx;
     }
 
+    const editWithChildren =
+      props.editMode && props.editInfo?.markup?.includes("ch-");
+
     this.state = {
       selectedFormat: initialFormat,
       extraBlockFormat: null,
-      withChildren: savedWithChildren,
+      withChildren: editWithChildren || savedWithChildren,
       lastColorKey: savedColorKey,
       focusedCell: null,
       focusedFmt: null,
+      quickModeActivated: false,
     };
 
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -125,7 +142,8 @@ class ColorPopover extends React.Component {
   componentDidMount() {
     document.addEventListener("keydown", this.handleKeyDown, true);
     document.addEventListener("mousedown", this.handleClickOutside);
-    if (this.containerRef) this.containerRef.focus();
+    // In quick mode, keep focus on the textarea until user activates with Tab/confirmKey
+    if (!this.props.quickMode && this.containerRef) this.containerRef.focus();
   }
 
   componentWillUnmount() {
@@ -140,6 +158,28 @@ class ColorPopover extends React.Component {
   }
 
   handleKeyDown(e) {
+    // Quick mode: before activation, only Tab/confirmKey activate; everything else dismisses
+    if (this.props.quickMode && !this.state.quickModeActivated) {
+      // Ignore modifier-only keys (Shift, Ctrl, Alt, Meta)
+      if (["Shift", "Control", "Alt", "Meta"].includes(e.key)) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        this.close();
+        return;
+      }
+      if (e.key === "Tab" || e.key === this.props.confirmKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.setState({ quickModeActivated: true });
+        if (this.containerRef) this.containerRef.focus();
+        return;
+      }
+      // Any other key: dismiss the popover silently, let the keystroke pass through
+      this.close();
+      return;
+    }
+
     if (e.key === "Escape") {
       e.preventDefault();
       e.stopPropagation();
@@ -327,7 +367,9 @@ class ColorPopover extends React.Component {
       selEnd,
       extraMarkup,
       selectedUids,
+      this.props.editMode ? this.props.editInfo : undefined,
     );
+    this._colorApplied = true;
     this.close();
   }
 
@@ -362,6 +404,9 @@ class ColorPopover extends React.Component {
   }
 
   close() {
+    if (this.props.quickMode && this.props.onDismiss && !this._colorApplied) {
+      this.props.onDismiss();
+    }
     const portal = document.getElementById("cl-color-popover-portal");
     if (portal) ReactDOM.unmountComponentAtNode(portal);
   }
@@ -376,15 +421,20 @@ class ColorPopover extends React.Component {
       focusedFmt,
     } = this.state;
     const pos = this.props.position;
-    const { changeMode, presentMarkups, currentColorKeys } = this.props;
+    const { changeMode, editMode, editInfo, presentMarkups, currentColorKeys } =
+      this.props;
     const selectedFmt = formatTypes[selectedFormat];
     const currentMarkup = selectedFmt.markup;
     const showMixedWarning =
       changeMode && !presentMarkups?.includes(currentMarkup);
+    // In edit mode, mark the current color key from the detected wrapper
+    const editColorKey = editMode && editInfo ? editInfo.colorKey : null;
     const currentColorKeysForMarkup =
-      changeMode && currentColorKeys
-        ? (currentColorKeys[currentMarkup] ?? [])
-        : [];
+      editMode && editColorKey
+        ? [editColorKey]
+        : changeMode && currentColorKeys
+          ? (currentColorKeys[currentMarkup] ?? [])
+          : [];
     const showChildrenToggle = selectedFmt.supportsChildren === true;
 
     // Reset swatch refs arrays for fresh render
@@ -553,7 +603,11 @@ class ColorPopover extends React.Component {
         React.createElement(
           "span",
           { className: "cl-popover-title" },
-          changeMode ? "Change Color" : "Color Highlighter",
+          editMode
+            ? "Edit Color"
+            : changeMode
+              ? "Change Color"
+              : "Color Highlighter",
         ),
         React.createElement(
           "div",
@@ -646,8 +700,14 @@ class ColorPopover extends React.Component {
       // Hint
       React.createElement(
         "div",
-        { className: "cl-popover-hint" },
-        "1-6: format  |  7: +children  |  letter: color  |  Shift: dark  |  ↑↓←→: navigate  |  Esc: close",
+        {
+          className: "cl-popover-hint",
+        },
+        this.props.quickMode && !this.state.quickModeActivated
+          ? "⚠️ Press Tab to choose a color, or keep typing to dismiss"
+          : this.props.editMode
+            ? "Click color to change (same = remove)  |  Backspace: remove  |  Esc: close"
+            : "1-6: format  |  7: +children  |  letter: color  |  Shift: dark  |  ↑↓←→: navigate  |  Esc: close",
       ),
     );
   }
@@ -669,6 +729,12 @@ export function showColorPopover(uid, applyColorFn, selection = {}) {
       presentMarkups: selection.presentMarkups ?? [],
       isSingleMarkupType: selection.isSingleMarkupType ?? true,
       currentColorKeys: selection.currentColorKeys ?? {},
+      quickMode: selection.quickMode ?? false,
+      initialFormat: selection.initialFormat ?? null,
+      confirmKey: selection.confirmKey ?? null,
+      onDismiss: selection.onDismiss ?? null,
+      editMode: selection.editMode ?? false,
+      editInfo: selection.editInfo ?? null,
     }),
     portal,
   );
