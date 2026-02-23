@@ -1,8 +1,8 @@
 # Color Highlighter
 
-**Highlight, write or underline text with different colors, change background or add a border box to blocks. Visual toolbar + full keyboard support.**
+**Highlight, write, underline text or add border box with different colors, or at block (including or not children) apply background or border box. Visual toolbar + full keyboard support.**
 
-### 🆕 New in v.7
+### 🆕 New in v.7 (February 2026)
 
 - New Toolbar (still entirely keyboard only if you prefer)
 - Instant edit any existing format/color by opening toolbar with right-click
@@ -12,7 +12,14 @@
 
 ### The new toolbar:
 
-![color highlighter screenshot](https://github.com/fbgallet/roam-extension-color-highlighter/assets/74436347/98cbe563-0e19-46bd-ab07-794fdd31fa23)
+<img width="315" height="196" alt="image" src="https://github.com/user-attachments/assets/d48785ab-42c4-4f95-8844-92d401d30e7e" />
+
+### Formats and colors available:
+
+<img width="867" height="512" alt="image" src="https://github.com/user-attachments/assets/0bb54093-3189-49b2-99c3-a0225decf773" />
+
+<img width="958" height="1024" alt="image" src="https://github.com/user-attachments/assets/70760b40-d503-4669-97f2-735e0bce7b71" />
+
 
 ## Instructions
 
