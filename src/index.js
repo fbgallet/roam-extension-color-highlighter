@@ -815,7 +815,7 @@ function removeFromContent(
         (tag) =>
           (content = content.replaceAll(
             tag[0],
-            tag[1] ? tag[1] : tag[2] ? tag[2] : tag[3] ? tag[3] : "",
+            tag[1] ? tag[1] : tag[2] ? tag[2] : tag[3] ? tag[3] : tag[4] ? tag[4] : "",
           )),
       );
   } else {
@@ -1205,7 +1205,7 @@ export default {
     } else keyboardEnabled = extensionAPI.settings.get("keyboard-enabled");
     if (extensionAPI.settings.get("quick-color-enabled") == null) {
       extensionAPI.settings.set("quick-color-enabled", true);
-      quickColorEnabled = false;
+      quickColorEnabled = true;
     } else quickColorEnabled = extensionAPI.settings.get("quick-color-enabled");
 
     if (toolbarEnabled) commands.registerToolbarCommands();
