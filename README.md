@@ -104,8 +104,8 @@ Select multiple blocks with `Shift+click` or `Shift+↑/↓`, then use the toolb
 
 ## If you want to support my work
 
-If you want to encourage me to develop further and enhance Live AI extension, you can [buy me a coffee ☕ here](https://buymeacoffee.com/fbgallet) or [sponsor me on Github](https://github.com/sponsors/fbgallet). Thanks in advance for your support! 🙏
+If you want to encourage me to develop further and enhance Color Highlighter extension, you can [buy me a coffee ☕ here](https://buymeacoffee.com/fbgallet) or [sponsor me on Github](https://github.com/sponsors/fbgallet). Thanks in advance for your support! 🙏
 
 For any question or suggestion, DM me on **X/Twitter** and follow me to be informed of updates and new extensions : [@fbgallet](https://x.com/fbgallet), or on Bluesky: [@fbgallet.bsky.social](https://bsky.app/profile/fbgallet.bsky.social)
 
-Please report any issue [here](https://github.com/fbgallet/roam-extension-live-ai-assistant/issues).
+Please report any issue [here](https://github.com/fbgallet/roam-extension-color-highlighter/issues).
